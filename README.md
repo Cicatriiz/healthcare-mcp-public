@@ -1,5 +1,6 @@
 # Healthcare MCP Server
 
+[![smithery badge](https://smithery.ai/badge/@Cicatriiz/healthcare-mcp-public)](https://smithery.ai/server/@Cicatriiz/healthcare-mcp-public)
 A Model Context Protocol (MCP) server providing AI assistants with access to healthcare data and medical information tools.
 
 ## Overview
@@ -23,6 +24,14 @@ Healthcare MCP Server is a specialized server that implements the Model Context 
 ## Installation
 
  
+
+### Installing via Smithery
+
+To install Healthcare Data and Medical Information Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@Cicatriiz/healthcare-mcp-public):
+
+```bash
+npx -y @smithery/cli install @Cicatriiz/healthcare-mcp-public --client claude
+```
 
 ### Manual Installation
 
