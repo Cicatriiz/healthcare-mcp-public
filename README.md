@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/cicatriiz-healthcare-mcp-public-badge.png)](https://mseep.ai/app/cicatriiz-healthcare-mcp-public)
+
 # Healthcare MCP Server
 
 [![smithery badge](https://smithery.ai/badge/@Cicatriiz/healthcare-mcp-public)](https://smithery.ai/server/@Cicatriiz/healthcare-mcp-public)
