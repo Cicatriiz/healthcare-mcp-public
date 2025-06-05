@@ -1,5 +1,6 @@
 import pytest
 import os
+import json
 import tempfile
 from unittest.mock import patch, MagicMock
 from src.tools.fda_tool import FDATool
@@ -19,6 +20,7 @@ class TestFDATool:
         # Mock the cache get and set methods
         tool.cache.get = MagicMock(return_value=None)
         tool.cache.set = MagicMock(return_value=True)
+        tool.cache.delete = MagicMock(return_value=True)
         
         yield tool
         
@@ -46,7 +48,10 @@ class TestFDATool:
                 {
                     "generic_name": "ASPIRIN",
                     "brand_name": "BAYER",
-                    "product_type": "HUMAN PRESCRIPTION DRUG"
+                    "labeler_name": "Bayer Healthcare",
+                    "product_type": "HUMAN PRESCRIPTION DRUG",
+                    "route": ["ORAL"],
+                    "marketing_status": "PRESCRIPTION"
                 }
             ]
         }
@@ -59,15 +64,23 @@ class TestFDATool:
         assert result["status"] == "success"
         assert result["drug_name"] == "aspirin"
         assert result["total_results"] == 1
-        assert len(result["results"]) == 1
-        assert result["results"][0]["generic_name"] == "ASPIRIN"
+        
+        # Verify extracted data structure (dictionary instead of list)
+        assert isinstance(result["results"], dict)
+        assert result["results"]["generic_name"] == "ASPIRIN"
+        assert result["results"]["brand_name"] == "BAYER"
+        assert result["results"]["product_type"] == "HUMAN PRESCRIPTION DRUG"
+        
+        # Verify response size is reasonable
+        result_size = len(json.dumps(result))
+        assert result_size < 10000, f"Response size ({result_size}) is too large"
         
         # Verify API call
         mock_request.assert_called_once()
         args, kwargs = mock_request.call_args
         assert args[0] == "https://api.fda.gov/drug/ndc.json"
-        assert kwargs["params"]["search"] == "generic_name:aspirin+OR+brand_name:aspirin"
-        assert kwargs["params"]["limit"] == 3
+        assert kwargs["params"]["search"] == "generic_name:aspirin OR brand_name:aspirin"
+        assert kwargs["params"]["limit"] == 1  # Updated from 3 to 1
         assert kwargs["params"]["api_key"] == "test_api_key"
     
     @patch('src.tools.base_tool.BaseTool._make_request')
@@ -84,10 +97,16 @@ class TestFDATool:
                 {
                     "openfda": {
                         "generic_name": ["ASPIRIN"],
-                        "brand_name": ["BAYER"]
+                        "brand_name": ["BAYER"],
+                        "manufacturer_name": ["Bayer Healthcare"]
                     },
                     "indications_and_usage": ["Pain relief"],
-                    "warnings": ["May cause stomach bleeding"]
+                    "dosage_and_administration": ["Take as directed"],
+                    "warnings_and_cautions": ["May cause stomach bleeding"],
+                    "contraindications": ["Not for children"],
+                    "adverse_reactions": ["<table>Very long HTML content</table>Nausea, headache"],
+                    "drug_interactions": ["Interacts with blood thinners"],
+                    "pregnancy": ["Consult doctor"]
                 }
             ]
         }
@@ -100,19 +119,40 @@ class TestFDATool:
         assert result["status"] == "success"
         assert result["drug_name"] == "aspirin"
         assert result["total_results"] == 1
-        assert len(result["results"]) == 1
-        assert result["results"][0]["openfda"]["generic_name"][0] == "ASPIRIN"
+        
+        # Verify extracted data structure (dictionary instead of list)
+        assert isinstance(result["results"], dict)
+        assert "brand_names" in result["results"]
+        assert "generic_names" in result["results"]
+        assert "indications" in result["results"]
+        assert "dosage" in result["results"]
+        assert "warnings" in result["results"]
+        assert "adverse_reactions" in result["results"]
+        
+        # Verify content extraction
+        assert "ASPIRIN" in result["results"]["generic_names"]
+        assert "BAYER" in result["results"]["brand_names"]
+        assert "Bayer Healthcare" in result["results"]["manufacturer"]
+        
+        # Verify HTML sanitization
+        assert "<table>" not in str(result["results"]["adverse_reactions"])
+        assert "Nausea, headache" in str(result["results"]["adverse_reactions"])
+        
+        # Verify response size is reasonable
+        result_size = len(json.dumps(result))
+        assert result_size < 10000, f"Response size ({result_size}) is too large"
         
         # Verify API call
         mock_request.assert_called_once()
         args, kwargs = mock_request.call_args
         assert args[0] == "https://api.fda.gov/drug/label.json"
-        assert kwargs["params"]["search"] == "openfda.generic_name:aspirin+OR+openfda.brand_name:aspirin"
+        assert kwargs["params"]["search"] == "openfda.generic_name:aspirin OR openfda.brand_name:aspirin"
+        assert kwargs["params"]["limit"] == 1
     
     @patch('src.tools.base_tool.BaseTool._make_request')
     async def test_lookup_drug_adverse_events(self, mock_request, fda_tool):
         """Test looking up drug adverse events"""
-        # Mock response for adverse events
+        # Mock response for adverse events (now using label endpoint)
         mock_response = {
             "meta": {
                 "results": {
@@ -121,19 +161,13 @@ class TestFDATool:
             },
             "results": [
                 {
-                    "patient": {
-                        "drug": [
-                            {
-                                "medicinalproduct": "ASPIRIN",
-                                "drugindication": "HEADACHE"
-                            }
-                        ],
-                        "reaction": [
-                            {
-                                "reactionmeddrapt": "NAUSEA"
-                            }
-                        ]
-                    }
+                    "openfda": {
+                        "generic_name": ["ASPIRIN"],
+                        "brand_name": ["BAYER"]
+                    },
+                    "adverse_reactions": ["Nausea, headache, dizziness"],
+                    "warnings_and_cautions": ["May cause stomach bleeding"],
+                    "boxed_warning": ["Serious cardiovascular risks"]
                 }
             ]
         }
@@ -146,14 +180,29 @@ class TestFDATool:
         assert result["status"] == "success"
         assert result["drug_name"] == "aspirin"
         assert result["total_results"] == 1
-        assert len(result["results"]) == 1
-        assert result["results"][0]["patient"]["drug"][0]["medicinalproduct"] == "ASPIRIN"
         
-        # Verify API call
+        # Verify extracted data structure (dictionary instead of list)
+        assert isinstance(result["results"], dict)
+        assert "brand_names" in result["results"]
+        assert "generic_names" in result["results"]
+        assert "adverse_reactions" in result["results"]
+        assert "warnings" in result["results"]
+        assert "boxed_warning" in result["results"]
+        
+        # Verify content extraction
+        assert "ASPIRIN" in result["results"]["generic_names"]
+        assert "BAYER" in result["results"]["brand_names"]
+        assert "Nausea" in str(result["results"]["adverse_reactions"])
+        
+        # Verify response size is reasonable
+        result_size = len(json.dumps(result))
+        assert result_size < 10000, f"Response size ({result_size}) is too large"
+        
+        # Verify API call - now using label endpoint for adverse events
         mock_request.assert_called_once()
         args, kwargs = mock_request.call_args
-        assert args[0] == "https://api.fda.gov/drug/event.json"
-        assert kwargs["params"]["search"] == "patient.drug.medicinalproduct:aspirin"
+        assert args[0] == "https://api.fda.gov/drug/label.json"
+        assert kwargs["params"]["search"] == "openfda.generic_name:aspirin OR openfda.brand_name:aspirin"
     
     @patch('src.tools.base_tool.BaseTool._make_request')
     async def test_lookup_drug_invalid_type(self, mock_request, fda_tool):
@@ -165,7 +214,11 @@ class TestFDATool:
                     "total": 1
                 }
             },
-            "results": [{"generic_name": "ASPIRIN"}]
+            "results": [{
+                "generic_name": "ASPIRIN",
+                "brand_name": "BAYER",
+                "product_type": "HUMAN PRESCRIPTION DRUG"
+            }]
         }
         mock_request.return_value = mock_response
         
@@ -211,7 +264,11 @@ class TestFDATool:
                     "total": 1
                 }
             },
-            "results": [{"generic_name": "ASPIRIN"}]
+            "results": [{
+                "generic_name": "ASPIRIN",
+                "brand_name": "BAYER",
+                "product_type": "HUMAN PRESCRIPTION DRUG"
+            }]
         }
         mock_request.return_value = mock_response
         
@@ -242,3 +299,69 @@ class TestFDATool:
         result3 = await fda_tool.lookup_drug("ibuprofen")
         assert result3["status"] == "success"
         assert mock_request.call_count == 2
+        
+    @patch('src.tools.base_tool.BaseTool._make_request')
+    async def test_sanitize_text(self, mock_request, fda_tool):
+        """Test text sanitization functionality"""
+        # Create a large HTML table that will trigger the size threshold (>5000 chars)
+        large_table = "<table styleCode='Botrule Lrule Rrule Toprule'>"
+        # Add a header row
+        large_table += "<tr><th>Adverse Reaction</th><th>Placebo (N=1000)</th><th>Drug (N=1000)</th></tr>"
+        # Add many rows to make it exceed 5000 chars
+        for i in range(200):  # This will create a very large table
+            large_table += f"<tr><td>Adverse Effect {i}</td><td>{i}%</td><td>{i*2}%</td></tr>"
+        large_table += "</table>"
+        
+        # Verify the table is actually large enough
+        assert len(large_table) > 5000, f"Test table size ({len(large_table)}) should be >5000 chars"
+        
+        # Mock response with problematic HTML content
+        mock_response = {
+            "meta": {
+                "results": {
+                    "total": 1
+                }
+            },
+            "results": [
+                {
+                    "openfda": {
+                        "generic_name": ["FLUOXETINE"],
+                        "brand_name": ["PROZAC"]
+                    },
+                    "adverse_reactions": [
+                        large_table,  # Large table that should be replaced
+                        "<p>Common adverse reactions include: <b>headache</b>, <i>nausea</i>, insomnia.</p>",  # HTML that should be cleaned
+                        "Some patients may experience " + "very long text " * 200  # Long text that should be truncated
+                    ],
+                    "indications_and_usage": ["<p>For the treatment of <b>depression</b> and <i>anxiety</i></p>"]
+                }
+            ]
+        }
+        mock_request.return_value = mock_response
+        
+        # Test lookup
+        result = await fda_tool.lookup_drug("fluoxetine", "label")
+        
+        # Verify HTML tags are removed from regular content
+        assert "<p>" not in str(result["results"]["indications"])
+        assert "<b>" not in str(result["results"]["indications"])
+        assert "depression" in str(result["results"]["indications"])
+        
+        # Verify HTML tags are removed from adverse reactions
+        for text in result["results"]["adverse_reactions"]:
+            if "headache" in text:
+                assert "<b>" not in text
+                assert "<p>" not in text
+                assert "<i>" not in text
+        
+        # Verify long text is truncated
+        for text in result["results"]["adverse_reactions"]:
+            assert len(text) <= 1000, f"Text not truncated properly: {len(text)} chars"
+            
+        # Verify table content is properly handled with replacement text
+        table_replacement_found = False
+        for text in result["results"]["adverse_reactions"]:
+            if "[Table content removed due to size]" in text:
+                table_replacement_found = True
+                break
+        assert table_replacement_found, "Table replacement text not found"
