@@ -4,6 +4,9 @@
   "description": "Healthcare MCP Server for medical information access",
   "type": "module",
   "main": "server/index.js",
+  "bin": {
+    "healthcare-mcp": "server/index.js"
+  },
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",

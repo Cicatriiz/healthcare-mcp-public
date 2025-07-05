@@ -34,7 +34,7 @@ const sessionId = randomUUID();
 // Create MCP server
 const server = new Server(
   {
-    name: "healthcare-mcp-nodejs",
+    name: "healthcare-mcp",
     version: "1.0.0",
   },
   {

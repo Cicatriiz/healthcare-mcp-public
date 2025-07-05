@@ -42,7 +42,19 @@ To install Healthcare Data and Medical Information Server for Claude Desktop aut
 npx -y @smithery/cli install @Cicatriiz/healthcare-mcp-public --client claude
 ```
 
-### Option 3: Node.js Manual Installation
+### Option 3: npm Installation
+
+1. Install the package:
+   ```bash
+   npm install healthcare-mcp
+   ```
+
+2. Run the server:
+   ```bash
+   npx healthcare-mcp
+   ```
+
+### Option 4: Manual Installation from Source
 
 1. Clone the repository:
    ```bash
