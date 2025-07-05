@@ -66,7 +66,7 @@ export class ClinicalTrialsTool extends BaseTool {
           'active': 'ACTIVE_NOT_RECRUITING',
           'not_recruiting': 'ACTIVE_NOT_RECRUITING'
         };
-        params['query.status'] = statusMap[status] || 'RECRUITING';
+        params['filter.overallStatus'] = statusMap[status] || 'RECRUITING';
       }
       
       const url = this.buildUrl(this.baseUrl, params);

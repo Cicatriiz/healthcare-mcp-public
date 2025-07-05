@@ -6,7 +6,7 @@ import { BaseTool } from './base-tool.js';
 export class HealthTopicsTool extends BaseTool {
   constructor(cacheService) {
     super(cacheService);
-    this.baseUrl = 'https://health.gov/myhealthfinder/api/v3';
+    this.baseUrl = 'https://odphp.health.gov/myhealthfinder/api/v4';
   }
 
   /**
@@ -36,14 +36,13 @@ export class HealthTopicsTool extends BaseTool {
     try {
       console.error(`Searching Health Topics for: ${topic}, language: ${language}`);
       
-      // Build API URL with parameters
+      // Build API URL with parameters for topicsearch
       const params = {
         keyword: topic,
-        lang: language,
-        api: '1'
+        lang: language
       };
       
-      const url = this.buildUrl(`${this.baseUrl}/topics.json`, params);
+      const url = this.buildUrl(`${this.baseUrl}/topicsearch.json`, params);
       
       // Make the request
       const data = await this.makeRequest(url);
@@ -52,8 +51,8 @@ export class HealthTopicsTool extends BaseTool {
       let topics = [];
       let totalResults = 0;
       
-      if (data && data.Result && data.Result.Topics) {
-        const rawTopics = data.Result.Topics.Topic || [];
+      if (data && data.Result && data.Result.Resources) {
+        const rawTopics = data.Result.Resources.Resource || [];
         totalResults = rawTopics.length;
         
         // Process each topic
@@ -96,7 +95,7 @@ export class HealthTopicsTool extends BaseTool {
         search_term: topic,
         language: language,
         total_results: totalResults,
-        topics: topics
+        health_topics: topics
       });
       
       // Cache for 24 hours (86400 seconds)

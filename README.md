@@ -5,7 +5,7 @@ A Model Context Protocol (MCP) server providing AI assistants with access to hea
 
 ## Overview
 
-Healthcare MCP Server is a specialized Node.js server that implements the Model Context Protocol (MCP) to provide AI assistants with access to healthcare data and medical information tools. It enables AI models to retrieve accurate, up-to-date medical information from authoritative sources.
+Healthcare MCP Server is a specialized Node.js server that implements the Model Context Protocol (MCP) to provide AI assistants with access to healthcare data and medical information tools. It enables AI models to retrieve accurate, up-to-date medical information from authoritative sources. This repository provides a single DXT package containing the complete Node.js implementation.
 
 ## DXT Extension
 
@@ -13,17 +13,17 @@ This repository includes a packaged DXT (Desktop Extension) file for easy instal
 
 ## Features
 
-- **FDA Drug Information**: Search and retrieve comprehensive drug information from the FDA database
+- **FDA Drug Information**: Search and retrieve comprehensive drug information from the FDA database (improved response parsing)
 - **PubMed Research**: Search medical literature from PubMed's database of scientific articles
-- **Health Topics**: Access evidence-based health information from Health.gov
-- **Clinical Trials**: Search for ongoing and completed clinical trials
+- **Health Topics**: Access evidence-based health information from Health.gov (updated to API v4)
+- **Clinical Trials**: Search for ongoing and completed clinical trials (updated API parameters)
 - **Medical Terminology**: Look up ICD-10 codes and medical terminology definitions
 - **Caching**: Efficient caching system with connection pooling to reduce API calls and improve performance
 - **Usage Tracking**: Anonymous usage tracking to monitor API usage
 - **Error Handling**: Robust error handling and logging
 - **Multiple Interfaces**: Support for both stdio (for CLI) and HTTP/SSE interfaces
 - **API Documentation**: Interactive API documentation with Swagger UI
-- **Comprehensive Testing**: Extensive test suite with pytest and coverage reporting
+- **Comprehensive Testing**: Extensive test suite with Node.js testing and API verification
 
 ## Installation
 

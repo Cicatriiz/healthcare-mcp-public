@@ -132,11 +132,20 @@ export class FDATool extends BaseTool {
       // Extract and sanitize key information
       const extractedData = this.extractKeyInfo(data, searchType);
       
-      // Process the response
+      // Process the response into expected format
+      const drugs = data.results ? data.results.map(drug => ({
+        product_number: drug.product_ndc || drug.ndc_product_code || '',
+        generic_name: drug.generic_name || extractedData.generic_name || '',
+        brand_name: drug.brand_name || extractedData.brand_name || '',
+        labeler_name: drug.labeler_name || extractedData.manufacturer || '',
+        product_type: drug.product_type || extractedData.product_type || '',
+        ...extractedData
+      })) : [extractedData];
+      
       const result = this.formatSuccessResponse({
         drug_name: drugName,
         search_type: searchType,
-        results: extractedData,
+        drugs: drugs,
         total_results: data.meta?.results?.total || 0
       });
       
