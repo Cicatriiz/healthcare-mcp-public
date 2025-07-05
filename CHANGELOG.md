@@ -2,7 +2,7 @@
 
 All notable changes to the Healthcare MCP project will be documented in this file.
 
-## [1.0.0] - 2025-07-05
+## [2.0.0] - 2025-07-05
 
 ### Major Changes
 - **Simplified to Node.js-only implementation** - Removed Python codebase to focus on single, robust implementation
