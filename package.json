@@ -1,0 +1,31 @@
+{
+  "name": "healthcare-mcp-extension",
+  "version": "1.0.0",
+  "description": "A Desktop Extension (DXT) for healthcare MCP server providing AI assistants with access to healthcare data and medical information tools",
+  "type": "module",
+  "main": "server-nodejs/index.js",
+  "scripts": {
+    "test": "node --test",
+    "start": "node server-nodejs/index.js",
+    "start-python": "python server/main.py"
+  },
+  "keywords": [
+    "healthcare",
+    "medical",
+    "mcp",
+    "extension",
+    "fda",
+    "pubmed",
+    "clinical-trials",
+    "icd-10"
+  ],
+  "author": "Cicatriiz",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Cicatriiz/healthcare-mcp-public.git"
+  },
+  "engines": {
+    "python": ">=3.8"
+  }
+}
