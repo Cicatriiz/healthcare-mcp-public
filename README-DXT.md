@@ -1,106 +1,333 @@
-# Healthcare MCP Desktop Extension (DXT)
+# Healthcare MCP Node.js Extension
 
-This directory contains a Desktop Extension (DXT) version of the Healthcare MCP Server. The DXT format makes it easy to install and run MCP servers with a single click.
+A comprehensive healthcare data and research MCP (Model Context Protocol) server implemented in Node.js. This DXT (Desktop Extension) provides access to FDA drug information, PubMed research, health topics, clinical trials, medical terminology, and usage analytics.
 
-## What's Changed for DXT
+## Features
 
-### Structure
-The original MCP server has been converted to follow DXT specifications:
+- **FDA Drug Lookup**: Search and retrieve detailed information about FDA-approved drugs
+- **PubMed Research**: Access medical research articles and publications
+- **Health Topics**: Get information on various health conditions and topics
+- **Clinical Trials**: Search for ongoing and completed clinical trials
+- **Medical Terminology**: Look up ICD-10 codes and medical terms
+- **Usage Analytics**: Track and analyze tool usage patterns
 
-- **`manifest.json`**: Contains all extension metadata and configuration
-- **`server/`**: Contains the Python MCP server code with bundled dependencies
-- **`package.json`**: Added ES module support for the extension
-- **`healthcare-mcp.dxt`**: The packaged extension file
+## Installation
 
-### Key Features
-- **Self-contained**: All Python dependencies are bundled in `server/lib/`
-- **Cross-platform**: Works on macOS, Windows, and Linux
-- **User-configurable**: Supports optional FDA API key, cache settings, and debug mode
-- **Zero setup**: No manual Python environment setup required
+### DXT Extension Installation
 
-### Installation
+1. Download the `healthcare-mcp-nodejs.dxt` file
+2. Install it in your DXT-compatible application
+3. Configure the extension with your API keys (see Configuration section)
 
-#### Option 1: Using the DXT File
-1. Download `healthcare-mcp.dxt`
-2. Open the file with Claude Desktop (or another MCP-compatible application)
-3. Follow the installation prompts
-4. Configure optional settings like FDA API key if desired
+### Manual Installation
 
-#### Option 2: Manual Installation
-If you want to install manually or use with other MCP clients:
-
-1. Extract the DXT file (it's a zip archive):
+1. Clone this repository
+2. Navigate to the `server-nodejs` directory
+3. Install dependencies:
    ```bash
-   unzip healthcare-mcp.dxt -d healthcare-mcp-extension
+   npm install
+   ```
+4. Start the server:
+   ```bash
+   npm start
    ```
 
-2. Configure your MCP client to use the server:
-   ```json
-   {
-     "mcpServers": {
-       "healthcare-mcp": {
-         "command": "python",
-         "args": ["path/to/healthcare-mcp-extension/server/main.py"],
-         "env": {
-           "PYTHONPATH": "path/to/healthcare-mcp-extension/server:path/to/healthcare-mcp-extension/server/lib"
-         }
-       }
-     }
-   }
-   ```
+## Configuration
+
+The extension supports the following configuration options:
+
+### API Keys (Optional but Recommended)
+
+While the extension can work without API keys for some services, providing them will give you:
+- Higher rate limits
+- Access to premium features
+- Better performance
+
+Available API configurations:
+- **FDA API Key**: For enhanced FDA drug database access
+- **NCBI API Key**: For improved PubMed search performance
+- **NIH API Key**: For clinical trials and health topics
 
 ### Configuration Options
 
-The DXT extension supports the following user-configurable options:
+When installing the DXT extension, you can configure:
 
-- **FDA API Key** (optional): For increased rate limits when querying FDA data
-- **Cache TTL**: How long to cache API responses (default: 24 hours)
-- **Debug Mode**: Enable detailed logging for troubleshooting
+- `fda_api_key` (string): Your FDA API key
+- `ncbi_api_key` (string): Your NCBI E-utilities API key
+- `enable_caching` (boolean): Enable response caching (default: true)
+- `cache_duration` (number): Cache duration in minutes (default: 60)
+- `rate_limit` (number): Requests per minute (default: 100)
 
-### Available Tools
+## Available Tools
 
-The extension provides the same tools as the original MCP server:
+### 1. FDA Drug Lookup (`fda_drug_lookup`)
 
-1. **`fda_drug_lookup`**: Look up drug information from the FDA database
-2. **`pubmed_search`**: Search medical literature in PubMed
-3. **`health_topics`**: Get health information from Health.gov
-4. **`clinical_trials_search`**: Search for clinical trials
-5. **`lookup_icd_code`**: Look up ICD-10 medical codes
-6. **`get_usage_stats`**: Get usage statistics for the current session
-7. **`get_all_usage_stats`**: Get overall usage statistics
+Search for FDA-approved drugs and get detailed information including:
+- Drug name and generic name
+- Manufacturer information
+- Approval date
+- Indications and usage
+- Warnings and precautions
+- Dosage and administration
 
-### Benefits of DXT Format
+**Parameters:**
+- `query` (string): Drug name or active ingredient to search for
+- `limit` (number, optional): Maximum number of results (default: 10)
 
-1. **Easy Installation**: Single-click installation in compatible applications
-2. **No Dependencies**: All Python packages are bundled
-3. **Configuration UI**: User-friendly interface for setting options
-4. **Automatic Updates**: Support for extension updates through compatible clients
-5. **Portability**: Works across different systems without setup
+**Example:**
+```json
+{
+  "query": "aspirin",
+  "limit": 5
+}
+```
 
-### Development
+### 2. PubMed Research Search (`pubmed_search`)
 
-If you want to modify the extension:
+Search PubMed database for medical research articles and publications.
 
-1. Make changes to files in the `server/` directory
-2. Update `manifest.json` if adding new tools or changing configuration
-3. Increment the version in both `manifest.json` and `package.json`
-4. Rebuild the DXT file:
-   ```bash
-   zip -r healthcare-mcp.dxt manifest.json server/ package.json -x "server/__pycache__/*" "server/**/__pycache__/*"
-   ```
+**Parameters:**
+- `query` (string): Search query for medical research
+- `max_results` (number, optional): Maximum number of results (default: 10)
+- `sort` (string, optional): Sort order - "relevance" or "date" (default: "relevance")
 
-### Compatibility
+**Example:**
+```json
+{
+  "query": "diabetes treatment",
+  "max_results": 20,
+  "sort": "date"
+}
+```
 
-- **Claude Desktop**: >=0.10.0
-- **Platforms**: macOS, Windows, Linux
-- **Python**: >=3.8,<4.0 (bundled, no installation required)
+### 3. Health Topics (`health_topics`)
 
-### Support
+Get comprehensive information about health conditions and topics.
 
-For issues related to the DXT extension:
-- Check the original repository: https://github.com/Cicatriiz/healthcare-mcp-public
-- Review DXT documentation: https://github.com/anthropics/dxt
+**Parameters:**
+- `topic` (string): Health topic or condition to search for
+- `detailed` (boolean, optional): Return detailed information (default: false)
 
-### License
+**Example:**
+```json
+{
+  "topic": "hypertension",
+  "detailed": true
+}
+```
 
-MIT License - same as the original Healthcare MCP Server
+### 4. Clinical Trials Search (`clinical_trials_search`)
+
+Search for clinical trials related to specific conditions or treatments.
+
+**Parameters:**
+- `condition` (string): Medical condition or disease
+- `intervention` (string, optional): Treatment or intervention type
+- `status` (string, optional): Trial status ("recruiting", "active", "completed")
+- `location` (string, optional): Geographic location
+- `limit` (number, optional): Maximum number of results (default: 10)
+
+**Example:**
+```json
+{
+  "condition": "breast cancer",
+  "intervention": "immunotherapy",
+  "status": "recruiting",
+  "limit": 15
+}
+```
+
+### 5. Medical Terminology Lookup (`medical_terminology_lookup`)
+
+Look up medical terms, ICD-10 codes, and related information.
+
+**Parameters:**
+- `term` (string): Medical term or ICD-10 code to look up
+- `category` (string, optional): Category of lookup ("icd10", "terminology", "all")
+
+**Example:**
+```json
+{
+  "term": "E11.9",
+  "category": "icd10"
+}
+```
+
+### 6. Usage Analytics (`usage_analytics`)
+
+Get usage statistics and analytics for the MCP tools.
+
+**Parameters:**
+- `period` (string, optional): Time period ("day", "week", "month") (default: "day")
+- `tool` (string, optional): Specific tool to analyze (default: all tools)
+
+**Example:**
+```json
+{
+  "period": "week",
+  "tool": "fda_drug_lookup"
+}
+```
+
+## Technical Details
+
+### Architecture
+
+The Node.js MCP server is built using:
+- **@modelcontextprotocol/sdk**: Official MCP SDK for Node.js
+- **Express.js**: Web framework for HTTP endpoints
+- **SQLite3**: Local database for caching and analytics
+- **Node-cache**: In-memory caching for improved performance
+
+### Caching Strategy
+
+The extension implements multi-level caching:
+1. **In-memory cache**: Fast access for frequently requested data
+2. **SQLite database**: Persistent storage for offline access
+3. **Configurable TTL**: Customizable cache expiration times
+
+### Error Handling
+
+Robust error handling includes:
+- API rate limiting protection
+- Network timeout handling
+- Graceful degradation when services are unavailable
+- Detailed error messages for troubleshooting
+
+### Security Features
+
+- Input validation and sanitization
+- Rate limiting to prevent abuse
+- Secure API key storage
+- No sensitive data logging
+
+## Development
+
+### Project Structure
+
+```
+server-nodejs/
+├── index.js                 # Main MCP server entry point
+├── package.json             # Node.js dependencies and scripts
+├── base-tool.js             # Base class for all tools
+├── cache-service.js         # Caching functionality
+├── usage-service.js         # Usage tracking and analytics
+├── fda-tool.js             # FDA drug lookup tool
+├── pubmed-tool.js          # PubMed search tool
+├── health-topics-tool.js   # Health topics tool
+├── clinical-trials-tool.js # Clinical trials search tool
+├── medical-terminology-tool.js # Medical terminology lookup
+└── node_modules/           # Dependencies
+```
+
+### Adding New Tools
+
+To add a new tool:
+
+1. Create a new tool file extending the base tool class:
+```javascript
+const BaseTool = require('./base-tool');
+
+class NewTool extends BaseTool {
+  constructor() {
+    super('new_tool', 'Description of the new tool');
+  }
+
+  async execute(params) {
+    // Implementation
+    return this.formatResponse(data);
+  }
+}
+
+module.exports = NewTool;
+```
+
+2. Register the tool in `index.js`:
+```javascript
+const NewTool = require('./new-tool');
+server.setRequestHandler(ListToolsRequestSchema, async () => {
+  return {
+    tools: [
+      // ... existing tools
+      new NewTool().getDefinition()
+    ]
+  };
+});
+```
+
+### Testing
+
+Run the test suite:
+```bash
+npm test
+```
+
+For manual testing:
+```bash
+npm run test:manual
+```
+
+### Building DXT Package
+
+To create a new DXT package:
+```bash
+npm run build:dxt
+```
+
+## API Rate Limits
+
+Default rate limits (can be configured):
+- FDA API: 1000 requests/hour
+- PubMed API: 10 requests/second
+- ClinicalTrials.gov: 1000 requests/hour
+
+## Troubleshooting
+
+### Common Issues
+
+1. **API Key Invalid**: Verify your API keys are correctly configured
+2. **Rate Limit Exceeded**: Reduce request frequency or wait before retrying
+3. **Network Timeout**: Check internet connection and API service status
+4. **Cache Issues**: Clear cache using the provided tools or restart the extension
+
+### Debug Mode
+
+Enable debug logging by setting the environment variable:
+```bash
+DEBUG=healthcare-mcp:* npm start
+```
+
+### Log Files
+
+Logs are stored in:
+- Application logs: `~/.local/share/healthcare-mcp/logs/`
+- Error logs: `~/.local/share/healthcare-mcp/error.log`
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+Contributions are welcome! Please read our contributing guidelines and submit pull requests to the main repository.
+
+## Support
+
+For support and questions:
+- Check the troubleshooting section above
+- Review the MCP documentation
+- Open an issue in the project repository
+
+## Changelog
+
+### Version 1.0.0
+- Initial Node.js implementation
+- All core healthcare tools implemented
+- DXT packaging support
+- Comprehensive caching system
+- Usage analytics
+- Error handling and validation
+
+---
+
+*This extension is part of the Healthcare MCP project and provides Node.js-based implementation for healthcare data access through the Model Context Protocol.*

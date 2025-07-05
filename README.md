@@ -5,7 +5,11 @@ A Model Context Protocol (MCP) server providing AI assistants with access to hea
 
 ## Overview
 
-Healthcare MCP Server is a specialized server that implements the Model Context Protocol (MCP) to provide AI assistants with access to healthcare data and medical information tools. It enables AI models to retrieve accurate, up-to-date medical information from authoritative sources.
+Healthcare MCP Server is a specialized Node.js server that implements the Model Context Protocol (MCP) to provide AI assistants with access to healthcare data and medical information tools. It enables AI models to retrieve accurate, up-to-date medical information from authoritative sources.
+
+## DXT Extension
+
+This repository includes a packaged DXT (Desktop Extension) file for easy installation in compatible development environments. Download `healthcare-mcp.dxt` for one-click installation.
 
 ## Features
 
@@ -23,9 +27,14 @@ Healthcare MCP Server is a specialized server that implements the Model Context 
 
 ## Installation
 
- 
+### Option 1: DXT Extension (Recommended)
 
-### Installing via Smithery
+1. Download `healthcare-mcp.dxt` from this repository
+2. Open with your compatible MCP client (such as Claude Desktop)
+3. Follow the installation prompts
+4. Configure optional settings through the GUI
+
+### Option 2: Installing via Smithery
 
 To install Healthcare Data and Medical Information Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@Cicatriiz/healthcare-mcp-public):
 
@@ -33,78 +42,59 @@ To install Healthcare Data and Medical Information Server for Claude Desktop aut
 npx -y @smithery/cli install @Cicatriiz/healthcare-mcp-public --client claude
 ```
 
-### Manual Installation
+### Option 3: Node.js Manual Installation
 
 1. Clone the repository:
    ```bash
    git clone https://github.com/Cicatriiz/healthcare-mcp-public.git
-   cd healthcare-mcp-public
+   cd healthcare-mcp-public/server
    ```
 
-2. Create a virtual environment:
+2. Install dependencies:
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   npm install
    ```
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. Set up environment variables (optional):
+3. Set up environment variables (optional):
    ```bash
    # Create .env file from example
    cp .env.example .env
    # Edit .env with your API keys (optional)
    ```
 
-5. Run the server:
+4. Run the server:
    ```bash
-   python run.py
+   npm start
    ```
 
 ## Usage
 
-### Running in Different Transport Modes
+### Running the Server
 
-- **stdio mode** (default, for Cline):
+- **stdio mode** (default, for MCP clients):
   ```bash
-  python run.py
+  npm start
   ```
 
 - **HTTP/SSE mode** (for web clients):
   ```bash
-  python run.py --http --port 8000
+  npm run server:http
   ```
 
 ### Testing the Tools
 
-You can test the MCP tools using the new pytest-based test suite:
+You can test the MCP tools using the built-in test scripts:
 
 ```bash
-# Run all tests with pytest and coverage
-python -m tests.run_tests --pytest
+# Test all tools
+npm test
 
-# Run a specific test file
-python -m tests.run_tests --test test_fda_tool.py
-
-# Test the HTTP server
-python -m tests.run_tests --server --port 8000
-```
-
-For backward compatibility, you can still run the old tests:
-
-```bash
-# Run all tests (old style)
-python -m tests.run_tests
-
-# Test individual tools (old style)
-python -m tests.run_tests --fda        # Test FDA drug lookup
-python -m tests.run_tests --pubmed     # Test PubMed search
-python -m tests.run_tests --health     # Test Health Topics
-python -m tests.run_tests --trials     # Test Clinical Trials search
-python -m tests.run_tests --icd        # Test ICD-10 code lookup
+# Test individual tools
+npm run test:fda        # Test FDA drug lookup
+npm run test:pubmed     # Test PubMed search
+npm run test:health     # Test Health Topics
+npm run test:trials     # Test Clinical Trials search
+npm run test:icd        # Test ICD-10 code lookup
 ```
 
 ## API Reference
@@ -313,14 +303,14 @@ POST /mcp/call-tool
 }
 ```
 
-### Programmatic API
+### MCP Tools
 
-When using the MCP server programmatically, the following functions are available:
+When using the MCP server through compatible clients, the following tools are available:
 
 #### FDA Drug Lookup
 
-```python
-fda_drug_lookup(drug_name: str, search_type: str = "general")
+```javascript
+fda_drug_lookup(drug_name, search_type = "general")
 ```
 
 **Parameters:**
@@ -332,8 +322,8 @@ fda_drug_lookup(drug_name: str, search_type: str = "general")
 
 #### PubMed Search
 
-```python
-pubmed_search(query: str, max_results: int = 5, date_range: str = "")
+```javascript
+pubmed_search(query, max_results = 5, date_range = "")
 ```
 
 **Parameters:**
@@ -343,8 +333,8 @@ pubmed_search(query: str, max_results: int = 5, date_range: str = "")
 
 #### Health Topics
 
-```python
-health_topics(topic: str, language: str = "en")
+```javascript
+health_topics(topic, language = "en")
 ```
 
 **Parameters:**
@@ -353,8 +343,8 @@ health_topics(topic: str, language: str = "en")
 
 #### Clinical Trials Search
 
-```python
-clinical_trials_search(condition: str, status: str = "recruiting", max_results: int = 10)
+```javascript
+clinical_trials_search(condition, status = "recruiting", max_results = 10)
 ```
 
 **Parameters:**
@@ -364,8 +354,8 @@ clinical_trials_search(condition: str, status: str = "recruiting", max_results: 
 
 #### ICD-10 Code Lookup
 
-```python
-lookup_icd_code(code: str = None, description: str = None, max_results: int = 10)
+```javascript
+lookup_icd_code(code = null, description = null, max_results = 10)
 ```
 
 **Parameters:**

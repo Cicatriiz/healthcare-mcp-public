@@ -1,31 +1,33 @@
 {
-  "name": "healthcare-mcp-extension",
+  "name": "healthcare-mcp-nodejs",
   "version": "1.0.0",
-  "description": "A Desktop Extension (DXT) for healthcare MCP server providing AI assistants with access to healthcare data and medical information tools",
+  "description": "Healthcare MCP Server for medical information access - Node.js version",
   "type": "module",
-  "main": "server-nodejs/index.js",
+  "main": "index.js",
   "scripts": {
-    "test": "node --test",
-    "start": "node server-nodejs/index.js",
-    "start-python": "python server/main.py"
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node --test"
   },
   "keywords": [
     "healthcare",
     "medical",
     "mcp",
-    "extension",
     "fda",
     "pubmed",
     "clinical-trials",
-    "icd-10"
+    "icd-10",
+    "mcp-server"
   ],
   "author": "Cicatriiz",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/Cicatriiz/healthcare-mcp-public.git"
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "node-fetch": "^3.3.2",
+    "node-cache": "^5.1.2",
+    "sqlite3": "^5.1.6"
   },
   "engines": {
-    "python": ">=3.8"
+    "node": ">=18.0.0"
   }
 }

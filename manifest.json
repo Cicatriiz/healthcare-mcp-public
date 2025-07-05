@@ -17,15 +17,14 @@
   "documentation": "https://github.com/Cicatriiz/healthcare-mcp-public/blob/main/README.md",
   "support": "https://github.com/Cicatriiz/healthcare-mcp-public/issues",
   "server": {
-    "type": "python",
-    "entry_point": "server/main.py",
+    "type": "node",
+    "entry_point": "server/index.js",
     "mcp_config": {
-      "command": "python",
+      "command": "node",
       "args": [
-        "${__dirname}/server/main.py"
+        "${__dirname}/server/index.js"
       ],
       "env": {
-        "PYTHONPATH": "${__dirname}/server:${__dirname}/server/lib",
         "FDA_API_KEY": "${user_config.fda_api_key}",
         "CACHE_TTL": "${user_config.cache_ttl}",
         "DEBUG": "${user_config.debug_mode}"
@@ -72,7 +71,9 @@
     "health-information",
     "medical-data",
     "api",
-    "research"
+    "research",
+    "nodejs",
+    "javascript"
   ],
   "license": "MIT",
   "user_config": {
@@ -104,7 +105,7 @@
     "claude_desktop": ">=0.10.0",
     "platforms": ["darwin", "win32", "linux"],
     "runtimes": {
-      "python": ">=3.8,<4.0"
+      "node": ">=18.0.0"
     }
   }
 }
