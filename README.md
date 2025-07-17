@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/cicatriiz-healthcare-mcp-public-badge.png)](https://mseep.ai/app/cicatriiz-healthcare-mcp-public)
+
 # Healthcare MCP Server
 
 A Model Context Protocol (MCP) server providing AI assistants with access to healthcare data and medical information tools.
