@@ -59,6 +59,22 @@
     {
       "name": "get_all_usage_stats",
       "description": "Get overall usage statistics for all sessions"
+    },
+    {
+      "name": "medrxiv_search",
+      "description": "Search for pre-print articles on medRxiv"
+    },
+    {
+      "name": "calculate_bmi",
+      "description": "Calculate Body Mass Index (BMI)"
+    },
+    {
+      "name": "ncbi_bookshelf_search",
+      "description": "Search the NCBI Bookshelf for biomedical books and documents"
+    },
+    {
+      "name": "extract_dicom_metadata",
+      "description": "Extract metadata from a DICOM file"
     }
   ],
   "keywords": [

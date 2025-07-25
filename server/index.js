@@ -15,6 +15,10 @@ import { PubMedTool } from './pubmed-tool.js';
 import { HealthTopicsTool } from './health-topics-tool.js';
 import { ClinicalTrialsTool } from './clinical-trials-tool.js';
 import { MedicalTerminologyTool } from './medical-terminology-tool.js';
+import { MedRxivTool } from './medrxiv-tool.js';
+import { MedicalCalculatorTool } from './medical-calculator-tool.js';
+import { NcbiBookshelfTool } from './ncbi-bookshelf-tool.js';
+import { DicomTool } from './dicom-tool.js';
 import { UsageService } from './usage-service.js';
 
 // Initialize services
@@ -27,6 +31,10 @@ const pubmedTool = new PubMedTool(cacheService);
 const healthTopicsTool = new HealthTopicsTool(cacheService);
 const clinicalTrialsTool = new ClinicalTrialsTool(cacheService);
 const medicalTerminologyTool = new MedicalTerminologyTool(cacheService);
+const medrxivTool = new MedRxivTool(cacheService);
+const medicalCalculatorTool = new MedicalCalculatorTool(cacheService);
+const ncbiBookshelfTool = new NcbiBookshelfTool(cacheService);
+const dicomTool = new DicomTool(cacheService);
 
 // Generate a unique session ID for this connection
 const sessionId = randomUUID();
@@ -90,8 +98,87 @@ server.setRequestHandler(ListToolsRequestSchema, async (request) => {
               description: "Limit to articles published within years (e.g. '5' for last 5 years)",
               default: "",
             },
+            open_access: {
+              type: "boolean",
+              description: "Filter for open access articles",
+              default: false,
+            },
           },
           required: ["query"],
+        },
+      },
+      {
+        name: "medrxiv_search",
+        description: "Search for pre-print articles on medRxiv",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "Search query for medRxiv articles",
+            },
+            max_results: {
+              type: "number",
+              description: "Maximum number of results to return",
+              default: 10,
+              minimum: 1,
+              maximum: 100,
+            },
+          },
+          required: ["query"],
+        },
+      },
+      {
+        name: "calculate_bmi",
+        description: "Calculate Body Mass Index (BMI)",
+        inputSchema: {
+          type: "object",
+          properties: {
+            height_meters: {
+              type: "number",
+              description: "Height in meters",
+            },
+            weight_kg: {
+              type: "number",
+              description: "Weight in kilograms",
+            },
+          },
+          required: ["height_meters", "weight_kg"],
+        },
+      },
+      {
+        name: "ncbi_bookshelf_search",
+        description: "Search the NCBI Bookshelf for biomedical books and documents",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "Search query for NCBI Bookshelf",
+            },
+            max_results: {
+              type: "number",
+              description: "Maximum number of results to return",
+              default: 10,
+              minimum: 1,
+              maximum: 100,
+            },
+          },
+          required: ["query"],
+        },
+      },
+      {
+        name: "extract_dicom_metadata",
+        description: "Extract metadata from a DICOM file",
+        inputSchema: {
+          type: "object",
+          properties: {
+            file_path: {
+              type: "string",
+              description: "Path to the DICOM file",
+            },
+          },
+          required: ["file_path"],
         },
       },
       {
@@ -201,7 +288,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         break;
 
       case "pubmed_search":
-        result = await pubmedTool.searchLiterature(args.query, args.max_results, args.date_range);
+        result = await pubmedTool.searchLiterature(args.query, args.max_results, args.date_range, args.open_access);
+        break;
+
+      case "medrxiv_search":
+        result = await medrxivTool.search(args.query, args.max_results);
+        break;
+
+      case "calculate_bmi":
+        result = medicalCalculatorTool.calculateBmi(args.height_meters, args.weight_kg);
+        break;
+
+      case "ncbi_bookshelf_search":
+        result = await ncbiBookshelfTool.search(args.query, args.max_results);
+        break;
+
+      case "extract_dicom_metadata":
+        result = dicomTool.extractMetadata(args.file_path);
         break;
 
       case "health_topics":

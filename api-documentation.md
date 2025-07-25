@@ -311,6 +311,57 @@ Use the test file to test this tool:
 python -m tests.run_tests --icd
 ```
 
+### 6. medRxiv Search
+
+```
+medrxiv_search(query: str, max_results: int = 10)
+```
+
+**Description:**  
+Search for pre-print articles on medRxiv.
+
+**Parameters:**
+- `query`: Search query for medRxiv articles (required)
+- `max_results`: Maximum number of results to return (optional, default: 10)
+
+### 7. Calculate BMI
+
+```
+calculate_bmi(height_meters: float, weight_kg: float)
+```
+
+**Description:**  
+Calculate Body Mass Index (BMI).
+
+**Parameters:**
+- `height_meters`: Height in meters (required)
+- `weight_kg`: Weight in kilograms (required)
+
+### 8. NCBI Bookshelf Search
+
+```
+ncbi_bookshelf_search(query: str, max_results: int = 10)
+```
+
+**Description:**  
+Search the NCBI Bookshelf for biomedical books and documents.
+
+**Parameters:**
+- `query`: Search query for NCBI Bookshelf (required)
+- `max_results`: Maximum number of results to return (optional, default: 10)
+
+### 9. Extract DICOM Metadata
+
+```
+extract_dicom_metadata(file_path: str)
+```
+
+**Description:**  
+Extract metadata from a DICOM file.
+
+**Parameters:**
+- `file_path`: Path to the DICOM file (required)
+
 ## Usage Limits and Tiers
 
 The Healthcare MCP Server implements usage limits based on subscription tiers:

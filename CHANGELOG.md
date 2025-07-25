@@ -2,6 +2,29 @@
 
 All notable changes to the Healthcare MCP project will be documented in this file.
 
+## [2.1.0] - 2025-07-25
+
+### 🆕 New Features
+
+- **medRxiv Search**: Added a new tool to search for pre-print articles on medRxiv.
+- **Medical Calculator**: Added a new tool to calculate Body Mass Index (BMI).
+- **NCBI Bookshelf Search**: Added a new tool to search the NCBI Bookshelf for biomedical books and documents.
+- **DICOM Metadata Extraction**: Added a new tool to extract metadata from a DICOM file.
+
+### 🔧 Enhancements
+
+- **PubMed Open Access Filter**: Enhanced the PubMed search tool with an option to filter for open-access articles.
+
+### 📋 Documentation
+
+- **Updated `manifest.json`**: Added entries for all new tools.
+- **Updated `api-documentation.md`**: Added documentation for all new tools.
+- **Updated `README.md`**: Updated the features list and API reference to include the new tools.
+
+### 📦 Distribution
+
+- **Repacked DXT**: The `healthcare-mcp.dxt` file has been updated to include all new features and documentation.
+
 ## [2.0.0] - 2025-07-05
 
 ### Major Changes

@@ -23,8 +23,9 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "node-fetch": "^3.3.2",
+    "dicom-parser": "^1.8.21",
     "node-cache": "^5.1.2",
+    "node-fetch": "^3.3.2",
     "sqlite3": "^5.1.6"
   },
   "engines": {

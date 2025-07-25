@@ -63,7 +63,7 @@ export class PubMedTool extends BaseTool {
   /**
    * Search for medical literature in PubMed database
    */
-  async searchLiterature(query, maxResults = 5, dateRange = '') {
+  async searchLiterature(query, maxResults = 5, dateRange = '', openAccess = false) {
     // Input validation
     if (!query) {
       return this.formatErrorResponse('Search query is required');
@@ -83,7 +83,7 @@ export class PubMedTool extends BaseTool {
     }
     
     // Create cache key
-    const cacheKey = this.getCacheKey('pubmed_search', query, validMaxResults, dateRange);
+    const cacheKey = this.getCacheKey('pubmed_search', query, validMaxResults, dateRange, openAccess);
     
     // Check cache first
     const cachedResult = this.cache.get(cacheKey);
@@ -97,6 +97,9 @@ export class PubMedTool extends BaseTool {
       
       // Process query with date range if provided
       let processedQuery = query;
+      if (openAccess) {
+        processedQuery += ' AND open access[filter]';
+      }
       if (dateRange) {
         try {
           const yearsBack = parseInt(dateRange);
@@ -161,6 +164,7 @@ export class PubMedTool extends BaseTool {
         query: query,
         total_results: totalResults,
         date_range: dateRange,
+        open_access: openAccess,
         articles: articles
       });
       

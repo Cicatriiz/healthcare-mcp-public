@@ -18,6 +18,10 @@ This repository includes a packaged DXT (Desktop Extension) file for easy instal
 - **Health Topics**: Access evidence-based health information from Health.gov (updated to API v4)
 - **Clinical Trials**: Search for ongoing and completed clinical trials (updated API parameters)
 - **Medical Terminology**: Look up ICD-10 codes and medical terminology definitions
+- **medRxiv Search**: Search for pre-print articles on medRxiv
+- **Medical Calculator**: Calculate Body Mass Index (BMI)
+- **NCBI Bookshelf Search**: Search the NCBI Bookshelf for biomedical books and documents
+- **DICOM Metadata Extraction**: Extract metadata from a DICOM file
 - **Caching**: Efficient caching system with connection pooling to reduce API calls and improve performance
 - **Usage Tracking**: Anonymous usage tracking to monitor API usage
 - **Error Handling**: Robust error handling and logging
@@ -374,6 +378,45 @@ lookup_icd_code(code = null, description = null, max_results = 10)
 - `code`: ICD-10 code to look up (optional if description is provided)
 - `description`: Medical condition description to search for (optional if code is provided)
 - `max_results`: Maximum number of results to return
+
+#### medRxiv Search
+
+```javascript
+medrxiv_search(query, max_results = 10)
+```
+
+**Parameters:**
+- `query`: Search query for medRxiv articles
+- `max_results`: Maximum number of results to return
+
+#### Calculate BMI
+
+```javascript
+calculate_bmi(height_meters, weight_kg)
+```
+
+**Parameters:**
+- `height_meters`: Height in meters
+- `weight_kg`: Weight in kilograms
+
+#### NCBI Bookshelf Search
+
+```javascript
+ncbi_bookshelf_search(query, max_results = 10)
+```
+
+**Parameters:**
+- `query`: Search query for NCBI Bookshelf
+- `max_results`: Maximum number of results to return
+
+#### Extract DICOM Metadata
+
+```javascript
+extract_dicom_metadata(file_path)
+```
+
+**Parameters:**
+- `file_path`: Path to the DICOM file
 
 ## Data Sources
 
