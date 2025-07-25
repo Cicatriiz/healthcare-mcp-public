@@ -1,6 +1,6 @@
 {
   "name": "healthcare-mcp",
-  "version": "1.0.1",
+  "version": "2.1.0",
   "description": "Healthcare MCP Server for medical information access",
   "type": "module",
   "main": "server/index.js",
