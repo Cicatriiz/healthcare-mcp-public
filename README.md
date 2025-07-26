@@ -3,7 +3,7 @@
 [![smithery badge](https://smithery.ai/badge/@Cicatriiz/healthcare-mcp-public)](https://smithery.ai/server/@Cicatriiz/healthcare-mcp-public)
 A Model Context Protocol (MCP) server providing AI assistants with access to healthcare data and medical information tools.
 
-<a href="https://glama.ai/mcp/servers/@Cicatriiz/healthcare-mcp-public/healthcare-mcp-public">
+<a href="https://glama.ai/mcp/servers/@Cicatriiz/healthcare-mcp-public">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/@Cicatriiz/healthcare-mcp-public/badge" alt="Healthcare Server MCP server" />
 </a>
 
