@@ -3,6 +3,10 @@
 [![smithery badge](https://smithery.ai/badge/@Cicatriiz/healthcare-mcp-public)](https://smithery.ai/server/@Cicatriiz/healthcare-mcp-public)
 A Model Context Protocol (MCP) server providing AI assistants with access to healthcare data and medical information tools.
 
+<a href="https://glama.ai/mcp/servers/@Cicatriiz/healthcare-mcp-public/healthcare-mcp-public">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/@Cicatriiz/healthcare-mcp-public/badge" alt="Healthcare Server MCP server" />
+</a>
+
 ## Overview
 
 Healthcare MCP Server is a specialized Node.js server that implements the Model Context Protocol (MCP) to provide AI assistants with access to healthcare data and medical information tools. It enables AI models to retrieve accurate, up-to-date medical information from authoritative sources. This repository provides a single DXT package containing the complete Node.js implementation.
