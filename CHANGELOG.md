@@ -2,6 +2,43 @@
 
 All notable changes to the Healthcare MCP project will be documented in this file.
 
+## [2.1.1] - 2025-08-16
+
+### 🚀 Added
+
+- HTTP server implementation with REST endpoints, matching README usage:
+  - GET `/health`
+  - GET `/api/fda`
+  - GET `/api/pubmed`
+  - GET `/api/health_finder`
+  - GET `/api/clinical_trials`
+  - GET `/api/medical_terminology`
+  - POST `/mcp/call-tool`
+- New npm scripts to run HTTP mode:
+  - Root: `npm run server:http`
+  - Server dir: `npm run server:http`
+
+### 🔧 Fixed
+
+- Resolved README mismatch where `server:http` script was referenced but not implemented.
+
+### 📦 Distribution
+
+- Repacked `healthcare-mcp.dxt` for v2.1.1 using latest DXT CLI (0.2.6).
+- Updated `manifest.json` and package versions to `2.1.1`.
+
+### 🧪 Verification
+
+- Local tests passing (`node --test`).
+- Live API sanity checks:
+  - FDA lookup returned results for sample query.
+  - Health endpoint reports OK with uptime and cache TTL.
+  - Note: NCBI Bookshelf can rate-limit (HTTP 429) without API key; non-blocking.
+
+### 🔗 References
+
+- GitHub Release: `v2.1.1`
+
 ## [2.1.0] - 2025-07-25
 
 ### 🆕 New Features
