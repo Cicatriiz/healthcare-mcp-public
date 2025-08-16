@@ -2,7 +2,7 @@
   "dxt_version": "0.1",
   "name": "healthcare-mcp",
   "display_name": "Healthcare MCP Server",
-  "version": "1.0.0",
+  "version": "2.1.1",
   "description": "Healthcare MCP server providing AI assistants with access to healthcare data and medical information tools",
   "long_description": "A comprehensive Model Context Protocol (MCP) server that enables AI assistants to access healthcare data and medical information from authoritative sources. Features include FDA drug information, PubMed research search, health topics from Health.gov, clinical trials search, and ICD-10 code lookup. The server includes efficient caching, usage tracking, and robust error handling for reliable healthcare data access.",
   "author": {

@@ -1,6 +1,6 @@
 {
   "name": "healthcare-mcp-nodejs",
-  "version": "1.0.0",
+  "version": "2.1.1",
   "description": "Healthcare MCP Server for medical information access - Node.js version",
   "type": "module",
   "main": "index.js",
