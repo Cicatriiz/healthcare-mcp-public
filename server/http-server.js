@@ -17,6 +17,8 @@ import { NcbiBookshelfTool } from './ncbi-bookshelf-tool.js';
 import { DicomTool } from './dicom-tool.js';
 import { UsageService } from './usage-service.js';
 import { ShortageService } from './services/shortage-service.js';
+import { RxNormService } from './rxnorm-service.js';
+import { HistoryService } from './services/history-service.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -41,7 +43,11 @@ const medicalCalculatorTool = new MedicalCalculatorTool(cacheService);
 const ncbiBookshelfTool = new NcbiBookshelfTool(cacheService);
 const dicomTool = new DicomTool(cacheService);
 
-// Initialize Shortage Service with all tools
+// Initialize RxNorm and History services
+const rxnormService = new RxNormService(cacheService);
+const historyService = new HistoryService();
+
+// Initialize Shortage Service with all tools and history
 const shortageService = new ShortageService({
   fdaShortage: fdaShortageTool,
   fdaDrug: fdaTool,
@@ -51,7 +57,7 @@ const shortageService = new ShortageService({
   medicalTerminology: medicalTerminologyTool,
   medrxiv: medrxivTool,
   ncbiBookshelf: ncbiBookshelfTool
-}, cacheService);
+}, cacheService, historyService);
 
 const DASHBOARD_PUBLIC = path.join(__dirname, '..', 'dashboard', 'public');
 const MIME_TYPES = {
@@ -315,6 +321,62 @@ const server = http.createServer(async (req, res) => {
 
       if (dashboardPath === '/manufacturers') {
         const result = await shortageService.getManufacturers();
+        return writeJson(res, 200, result);
+      }
+
+      // RxNorm API endpoints
+      if (dashboardPath === '/rxnorm/normalize') {
+        const drugName = url.searchParams.get('drug_name');
+        if (!drugName) {
+          return writeJson(res, 400, { status: 'error', error_message: 'drug_name parameter required' });
+        }
+        const result = await rxnormService.normalizeDrugName(drugName);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/rxnorm/details') {
+        const rxcui = url.searchParams.get('rxcui');
+        if (!rxcui) {
+          return writeJson(res, 400, { status: 'error', error_message: 'rxcui parameter required' });
+        }
+        const result = await rxnormService.getDrugDetails(rxcui);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/rxnorm/alternatives') {
+        const rxcui = url.searchParams.get('rxcui');
+        if (!rxcui) {
+          return writeJson(res, 400, { status: 'error', error_message: 'rxcui parameter required' });
+        }
+        const result = await rxnormService.getTherapeuticAlternatives(rxcui);
+        return writeJson(res, 200, result);
+      }
+
+      // History API endpoints
+      if (dashboardPath === '/history/stats') {
+        const result = await historyService.getStats();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/history/timeline') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+        const result = await historyService.getShortageTimeline(ndc);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/history/trends') {
+        const startDate = url.searchParams.get('start_date');
+        const endDate = url.searchParams.get('end_date');
+        const result = await historyService.getHistoricalTrends(startDate, endDate);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/history/snapshot') {
+        // Trigger a manual snapshot
+        const result = await historyService.takeSnapshot(fdaShortageTool);
         return writeJson(res, 200, result);
       }
     }

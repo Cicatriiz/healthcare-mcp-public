@@ -5,7 +5,7 @@
  * analytics, enrichment, and aggregation across multiple MCP tools.
  */
 export class ShortageService {
-  constructor(mcpTools, cacheService) {
+  constructor(mcpTools, cacheService, historyService = null) {
     this.fdaShortage = mcpTools.fdaShortage;
     this.fdaDrug = mcpTools.fdaDrug;
     this.pubmed = mcpTools.pubmed;
@@ -15,6 +15,7 @@ export class ShortageService {
     this.medrxiv = mcpTools.medrxiv;
     this.ncbiBookshelf = mcpTools.ncbiBookshelf;
     this.cache = cacheService;
+    this.history = historyService;
 
     // US State coordinates for geocoding
     this.US_STATE_COORDS = {
@@ -1217,6 +1218,49 @@ export class ShortageService {
     }
 
     return insights;
+  }
+
+  /**
+   * Enrich shortage with historical duration data
+   * Uses local history database to provide accurate duration calculations
+   */
+  async enrichWithHistoricalData(shortage) {
+    if (!this.history) {
+      return shortage; // No history service available
+    }
+
+    try {
+      await this.history.initialize();
+
+      // Get actual duration from historical data
+      const actualDuration = await this.history.getActualDuration(shortage.ndc);
+
+      if (actualDuration !== null) {
+        shortage.actual_duration_days = actualDuration;
+        shortage.duration_source = 'historical_tracking';
+      }
+
+      return shortage;
+
+    } catch (error) {
+      console.error('[ShortageService] Error enriching with historical data:', error);
+      return shortage;
+    }
+  }
+
+  /**
+   * Enrich multiple shortages with historical data
+   */
+  async enrichManyWithHistoricalData(shortages) {
+    if (!this.history || !Array.isArray(shortages)) {
+      return shortages;
+    }
+
+    const enriched = await Promise.all(
+      shortages.map(shortage => this.enrichWithHistoricalData(shortage))
+    );
+
+    return enriched;
   }
 
   /**
