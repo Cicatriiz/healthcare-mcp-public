@@ -492,14 +492,48 @@ export class ShortageService {
       return null;
     }
 
-    // Basic regex to extract city, state, zip
-    // Format varies, this is a simple heuristic
-    const stateMatch = contactInfo.match(/\b([A-Z]{2})\s+\d{5}\b/);
-    const state = stateMatch ? stateMatch[1] : null;
+    let state = null;
+
+    // Try multiple patterns to extract state code
+    // Pattern 1: State code followed by zip (e.g., "NY 10001")
+    let stateMatch = contactInfo.match(/\b([A-Z]{2})\s+\d{5}\b/);
+    if (stateMatch) {
+      state = stateMatch[1];
+    }
+
+    // Pattern 2: State code with comma or period (e.g., "New York, NY" or "CA.")
+    if (!state) {
+      stateMatch = contactInfo.match(/,\s*([A-Z]{2})\s*[,.\s]/);
+      if (stateMatch) {
+        state = stateMatch[1];
+      }
+    }
+
+    // Pattern 3: State code at end of string (e.g., "123 Main St NY")
+    if (!state) {
+      stateMatch = contactInfo.match(/\b([A-Z]{2})\s*$/);
+      if (stateMatch) {
+        state = stateMatch[1];
+      }
+    }
+
+    // Pattern 4: Any 2-letter uppercase code that matches valid state
+    if (!state) {
+      const allMatches = contactInfo.match(/\b([A-Z]{2})\b/g);
+      if (allMatches) {
+        // Check if any match is a valid US state
+        for (const match of allMatches) {
+          if (this.US_STATE_COORDS[match]) {
+            state = match;
+            break;
+          }
+        }
+      }
+    }
 
     // Extract country (if "USA" or "United States" appears)
     const countryMatch = contactInfo.match(/\b(USA|United States|US)\b/i);
-    const country = countryMatch ? 'USA' : 'Unknown';
+    const country = countryMatch ? 'USA' : (state ? 'USA' : 'Unknown');
 
     return {
       state,
