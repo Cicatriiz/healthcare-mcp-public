@@ -229,6 +229,15 @@ const server = http.createServer(async (req, res) => {
     if (pathname.startsWith('/api/dashboard')) {
       const dashboardPath = pathname.replace('/api/dashboard', '');
 
+      if (dashboardPath === '/health') {
+        return writeJson(res, 200, {
+          status: 'ok',
+          session_id: sessionId,
+          uptime_seconds: Math.floor(process.uptime()),
+          timestamp: new Date().toISOString()
+        });
+      }
+
       if (dashboardPath === '/trends') {
         const result = await shortageService.getTemporalTrends();
         return writeJson(res, 200, result);
@@ -249,8 +258,35 @@ const server = http.createServer(async (req, res) => {
         return writeJson(res, 200, result);
       }
 
+      if (dashboardPath.startsWith('/shortages/')) {
+        const ndc = dashboardPath.replace('/shortages/', '');
+        const enrich = url.searchParams.get('enrich') === 'true';
+        const result = await shortageService.getShortageDetailEnriched(ndc, enrich);
+        return writeJson(res, 200, result);
+      }
+
       if (dashboardPath === '/analytics') {
         const result = await shortageService.getAnalytics();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/map') {
+        const result = await shortageService.getGeographicDistribution();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/stats') {
+        const result = await shortageService.getStats();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/therapeutic-classes') {
+        const result = await shortageService.getTherapeuticCategories();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/manufacturers') {
+        const result = await shortageService.getManufacturers();
         return writeJson(res, 200, result);
       }
     }
