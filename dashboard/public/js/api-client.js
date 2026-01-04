@@ -145,41 +145,6 @@ class DashboardAPI {
     async getShortageReasons() {
         return this.request('/shortage-reasons');
     }
-
-    /**
-     * Get manufacturing concentration risk analysis
-     */
-    async getManufacturingConcentration() {
-        return this.request('/census/concentration');
-    }
-
-    /**
-     * Get hospital shortage impact by state
-     */
-    async getHospitalImpact(state, shortageCategory) {
-        return this.request('/cms/shortage-impact', { state, category: shortageCategory });
-    }
-
-    /**
-     * Get health vulnerability assessment
-     */
-    async getHealthVulnerability(state, shortageCategory) {
-        return this.request('/cdc/health-impact', { state, category: shortageCategory });
-    }
-
-    /**
-     * Get state demographics
-     */
-    async getStateDemographics(state) {
-        return this.request('/census/demographics', { state });
-    }
-
-    /**
-     * Get national pharma manufacturing data
-     */
-    async getManufacturingByState(state) {
-        return this.request('/census/manufacturing', { state });
-    }
 }
 
 // Create global API instance
