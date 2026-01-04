@@ -138,6 +138,13 @@ class DashboardAPI {
     async getEconomicTrends() {
         return this.request('/economic-trends');
     }
+
+    /**
+     * Get shortage reasons analysis
+     */
+    async getShortageReasons() {
+        return this.request('/shortage-reasons');
+    }
 }
 
 // Create global API instance
