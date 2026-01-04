@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geographic Distribution - FDA Drug Shortage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+            border-radius: 0.5rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">FDA Drug Shortage Intelligence Dashboard</h1>
+                    <p class="text-sm text-gray-600 mt-1">Geographic Distribution</p>
+                </div>
+                <nav class="flex space-x-4">
+                    <a href="index.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Shortages</a>
+                    <a href="analytics.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Analytics</a>
+                    <a href="map.html" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium">Map</a>
+                    <a href="about.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">About</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Summary Stats -->
+        <div id="stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="text-sm font-medium text-gray-600">Total Regions</div>
+                <div class="mt-2 text-3xl font-bold text-blue-600" id="stat-regions">-</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="text-sm font-medium text-gray-600">Total Manufacturers</div>
+                <div class="mt-2 text-3xl font-bold text-purple-600" id="stat-manufacturers">-</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="text-sm font-medium text-gray-600">States with Shortages</div>
+                <div class="mt-2 text-3xl font-bold text-red-600" id="stat-states">-</div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-600">Loading geographic data...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center mb-8">
+            <div class="text-red-600 text-lg font-semibold mb-2">Error Loading Map</div>
+            <div id="error-message" class="text-red-800 mb-4"></div>
+            <button onclick="loadMap()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                Retry
+            </button>
+        </div>
+
+        <!-- Map Container -->
+        <div id="map-container" class="hidden">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Manufacturer Locations</h2>
+                <div id="map"></div>
+            </div>
+
+            <!-- Regional Breakdown Table -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Regional Breakdown</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Region</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">State</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Country</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Shortages</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturers</th>
+                            </tr>
+                        </thead>
+                        <tbody id="region-table" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="text-center text-sm text-gray-600">
+                <p>Data Source: <a href="https://open.fda.gov/apis/drug/drugshortages/" target="_blank" class="text-blue-600 hover:underline">openFDA Drug Shortages API</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api-client.js"></script>
+    <script>
+        let map;
+        let markers = [];
+
+        // US State coordinates for fallback positioning
+        const US_STATE_COORDS = {
+            'AL': [32.806671, -86.791130], 'AK': [61.370716, -152.404419],
+            'AZ': [33.729759, -111.431221], 'AR': [34.969704, -92.373123],
+            'CA': [36.116203, -119.681564], 'CO': [39.059811, -105.311104],
+            'CT': [41.597782, -72.755371], 'DE': [39.318523, -75.507141],
+            'FL': [27.766279, -81.686783], 'GA': [33.040619, -83.643074],
+            'HI': [21.094318, -157.498337], 'ID': [44.240459, -114.478828],
+            'IL': [40.349457, -88.986137], 'IN': [39.849426, -86.258278],
+            'IA': [42.011539, -93.210526], 'KS': [38.526600, -96.726486],
+            'KY': [37.668140, -84.670067], 'LA': [31.169546, -91.867805],
+            'ME': [44.693947, -69.381927], 'MD': [39.063946, -76.802101],
+            'MA': [42.230171, -71.530106], 'MI': [43.326618, -84.536095],
+            'MN': [45.694454, -93.900192], 'MS': [32.741646, -89.678696],
+            'MO': [38.456085, -92.288368], 'MT': [46.921925, -110.454353],
+            'NE': [41.125370, -98.268082], 'NV': [38.313515, -117.055374],
+            'NH': [43.452492, -71.563896], 'NJ': [40.298904, -74.521011],
+            'NM': [34.840515, -106.248482], 'NY': [42.165726, -74.948051],
+            'NC': [35.630066, -79.806419], 'ND': [47.528912, -99.784012],
+            'OH': [40.388783, -82.764915], 'OK': [35.565342, -96.928917],
+            'OR': [44.572021, -122.070938], 'PA': [40.590752, -77.209755],
+            'RI': [41.680893, -71.511780], 'SC': [33.856892, -80.945007],
+            'SD': [44.299782, -99.438828], 'TN': [35.747845, -86.692345],
+            'TX': [31.054487, -97.563461], 'UT': [40.150032, -111.862434],
+            'VT': [44.045876, -72.710686], 'VA': [37.769337, -78.169968],
+            'WA': [47.400902, -121.490494], 'WV': [38.491226, -80.954453],
+            'WI': [44.268543, -89.616508], 'WY': [42.755966, -107.302490]
+        };
+
+        // Load map on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMap();
+        });
+
+        async function loadMap() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const mapContainer = document.getElementById('map-container');
+
+            try {
+                loading.classList.remove('hidden');
+                error.classList.add('hidden');
+                mapContainer.classList.add('hidden');
+
+                // Fetch geographic data
+                const result = await api.getGeographicDistribution();
+
+                if (result.status === 'success') {
+                    const distribution = result.distribution;
+
+                    // Update stats
+                    const uniqueStates = new Set(distribution.map(d => d.state).filter(Boolean));
+                    const totalManufacturers = distribution.reduce((sum, d) => sum + (d.manufacturers?.length || 0), 0);
+
+                    document.getElementById('stat-regions').textContent = result.total_regions || 0;
+                    document.getElementById('stat-manufacturers').textContent = totalManufacturers;
+                    document.getElementById('stat-states').textContent = uniqueStates.size;
+
+                    // Initialize map
+                    initializeMap(distribution);
+
+                    // Render table
+                    renderRegionTable(distribution);
+
+                    // Show content
+                    mapContainer.classList.remove('hidden');
+                } else {
+                    throw new Error(result.error_message || 'Failed to load geographic data');
+                }
+            } catch (err) {
+                console.error('Error loading map:', err);
+                document.getElementById('error-message').textContent = err.message;
+                error.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function initializeMap(distribution) {
+            // Initialize Leaflet map centered on US
+            if (map) {
+                map.remove();
+            }
+
+            map = L.map('map').setView([39.8283, -98.5795], 4);
+
+            // Add tile layer (OpenStreetMap)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 18
+            }).addTo(map);
+
+            // Clear existing markers
+            markers.forEach(marker => marker.remove());
+            markers = [];
+
+            // Add markers for each region
+            distribution.forEach(region => {
+                const coords = getCoordinates(region);
+                if (coords) {
+                    const marker = L.circleMarker(coords, {
+                        radius: Math.min(8 + region.count * 2, 30),
+                        fillColor: getColorByCount(region.count),
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.7
+                    }).addTo(map);
+
+                    // Create popup content
+                    const popupContent = `
+                        <div class="p-2">
+                            <h3 class="font-semibold text-gray-900">${region.region || 'Unknown Region'}</h3>
+                            ${region.state ? `<p class="text-sm text-gray-600">State: ${region.state}</p>` : ''}
+                            ${region.country ? `<p class="text-sm text-gray-600">Country: ${region.country}</p>` : ''}
+                            <p class="text-sm font-medium text-red-600 mt-1">Shortages: ${region.count}</p>
+                            ${region.manufacturers && region.manufacturers.length > 0 ? `
+                                <p class="text-xs text-gray-500 mt-1">Manufacturers: ${region.manufacturers.slice(0, 3).join(', ')}${region.manufacturers.length > 3 ? '...' : ''}</p>
+                            ` : ''}
+                        </div>
+                    `;
+
+                    marker.bindPopup(popupContent);
+                    markers.push(marker);
+                }
+            });
+        }
+
+        function getCoordinates(region) {
+            // Try to use state coordinates if available
+            if (region.state && US_STATE_COORDS[region.state]) {
+                return US_STATE_COORDS[region.state];
+            }
+
+            // For international locations, we'd need a geocoding service
+            // For now, return null for non-US states
+            return null;
+        }
+
+        function getColorByCount(count) {
+            if (count >= 10) return '#dc2626'; // red-600
+            if (count >= 5) return '#f59e0b';  // amber-500
+            if (count >= 2) return '#3b82f6';  // blue-500
+            return '#10b981';                  // green-500
+        }
+
+        function renderRegionTable(distribution) {
+            const tbody = document.getElementById('region-table');
+
+            // Sort by count descending
+            const sorted = [...distribution].sort((a, b) => b.count - a.count);
+
+            tbody.innerHTML = sorted.map(region => {
+                return `
+                    <tr>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${region.region || 'Unknown'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${region.state || '-'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${region.country || '-'}</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-red-600">${region.count}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            ${region.manufacturers && region.manufacturers.length > 0
+                                ? region.manufacturers.slice(0, 3).join(', ') + (region.manufacturers.length > 3 ? '...' : '')
+                                : '-'
+                            }
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>

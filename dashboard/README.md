@@ -46,6 +46,8 @@ A comprehensive web-based dashboard for tracking FDA drug shortages with clinica
 
 3. **Access the Dashboard**:
    - Main Dashboard: `http://localhost:3001/` or `http://localhost:8080/`
+   - Analytics: `http://localhost:3001/analytics.html`
+   - Geographic Map: `http://localhost:3001/map.html`
    - About Page: `http://localhost:3001/about.html`
 
 ## Project Structure
@@ -86,10 +88,12 @@ const API_BASE_URL = 'https://your-api-domain.com/api/dashboard';
 - Status badges (Active/Resolved)
 - Click to view details
 
-### Future Pages (To be implemented)
-- **detail.html**: Detailed shortage view with enrichment tabs
+### Dashboard Pages
+- **index.html**: Main shortage list with search and filters
+- **detail.html**: Detailed shortage view with clinical enrichment tabs
 - **analytics.html**: Charts and visualizations
-- **map.html**: Interactive geographic map
+- **map.html**: Interactive geographic map with manufacturer locations
+- **about.html**: Documentation and methodology
 
 ## Technology Stack
 
