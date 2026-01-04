@@ -16,6 +16,13 @@ import { MedicalCalculatorTool } from './medical-calculator-tool.js';
 import { NcbiBookshelfTool } from './ncbi-bookshelf-tool.js';
 import { DicomTool } from './dicom-tool.js';
 import { UsageService } from './usage-service.js';
+import { ShortageService } from './services/shortage-service.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const sessionId = randomUUID();
@@ -34,6 +41,31 @@ const medicalCalculatorTool = new MedicalCalculatorTool(cacheService);
 const ncbiBookshelfTool = new NcbiBookshelfTool(cacheService);
 const dicomTool = new DicomTool(cacheService);
 
+// Initialize Shortage Service with all tools
+const shortageService = new ShortageService({
+  fdaShortage: fdaShortageTool,
+  fdaDrug: fdaTool,
+  pubmed: pubmedTool,
+  healthTopics: healthTopicsTool,
+  clinicalTrials: clinicalTrialsTool,
+  medicalTerminology: medicalTerminologyTool,
+  medrxiv: medrxivTool,
+  ncbiBookshelf: ncbiBookshelfTool
+}, cacheService);
+
+const DASHBOARD_PUBLIC = path.join(__dirname, '..', 'dashboard', 'public');
+const MIME_TYPES = {
+  '.html': 'text/html',
+  '.css': 'text/css',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon'
+};
+
 function writeJson(res, statusCode, body) {
   res.statusCode = statusCode;
   res.setHeader('Content-Type', 'application/json');
@@ -42,6 +74,27 @@ function writeJson(res, statusCode, body) {
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.end(JSON.stringify(body));
+}
+
+function serveStaticFile(filePath, res) {
+  const extname = path.extname(filePath);
+  const contentType = MIME_TYPES[extname] || 'application/octet-stream';
+
+  fs.readFile(filePath, (err, content) => {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        writeJson(res, 404, { status: 'error', error_message: 'File not found' });
+      } else {
+        writeJson(res, 500, { status: 'error', error_message: `Server error: ${err.code}` });
+      }
+    } else {
+      res.writeHead(200, {
+        'Content-Type': contentType,
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(content, 'utf-8');
+    }
+  });
 }
 
 async function handleCallTool(name, args) {
@@ -170,6 +223,43 @@ const server = http.createServer(async (req, res) => {
         }
       });
       return;
+    }
+
+    // Dashboard API Endpoints
+    if (pathname.startsWith('/api/dashboard')) {
+      const dashboardPath = pathname.replace('/api/dashboard', '');
+
+      if (dashboardPath === '/trends') {
+        const result = await shortageService.getTemporalTrends();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/shortage-reasons') {
+        const result = await shortageService.getShortageReasons();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/shortages') {
+        const filters = {
+          status: url.searchParams.get('status') || 'all',
+          therapeutic_category: url.searchParams.get('therapeutic_category'),
+          manufacturer: url.searchParams.get('manufacturer')
+        };
+        const result = await shortageService.getShortages(filters);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/analytics') {
+        const result = await shortageService.getAnalytics();
+        return writeJson(res, 200, result);
+      }
+    }
+
+    // Serve dashboard static files
+    if (!pathname.startsWith('/api') && !pathname.startsWith('/mcp')) {
+      let filePath = pathname === '/' ? '/index.html' : pathname;
+      filePath = path.join(DASHBOARD_PUBLIC, filePath);
+      return serveStaticFile(filePath, res);
     }
 
     writeJson(res, 404, { status: 'error', error_message: 'Not Found' });
