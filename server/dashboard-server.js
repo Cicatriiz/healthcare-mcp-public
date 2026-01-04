@@ -36,6 +36,10 @@ import { MedicalTerminologyTool } from './medical-terminology-tool.js';
 import { MedRxivTool } from './medrxiv-tool.js';
 import { NcbiBookshelfTool } from './ncbi-bookshelf-tool.js';
 import FREDTool from './fred-tool.js';
+import BLSTool from './bls-tool.js';
+import CensusTool from './census-tool.js';
+import CMSTool from './cms-tool.js';
+import CDCTool from './cdc-tool.js';
 import { UsageService } from './usage-service.js';
 import { ShortageService } from './services/shortage-service.js';
 
@@ -56,6 +60,10 @@ const medicalTerminologyTool = new MedicalTerminologyTool(cacheService);
 const medrxivTool = new MedRxivTool(cacheService);
 const ncbiBookshelfTool = new NcbiBookshelfTool(cacheService);
 const fredTool = new FREDTool(cacheService, process.env.FRED_API_KEY || '4532dbd3e3fb05a0ab2587a8e0ea25ec');
+const blsTool = new BLSTool(cacheService, process.env.BLS_API_KEY || '414a5fa3c1094429b6f95dab33d8a55d');
+const censusTool = new CensusTool(cacheService, process.env.CENSUS_API_KEY || '6d8afdd79444f99e5493f87ab18fdc2f725eb564');
+const cmsTool = new CMSTool(cacheService);
+const cdcTool = new CDCTool(cacheService);
 
 // Initialize shortage service with all tools
 const shortageService = new ShortageService(
@@ -253,6 +261,143 @@ const server = http.createServer(async (req, res) => {
       return writeJson(res, 200, result);
     }
 
+    // Get BLS employment trends
+    if (req.method === 'GET' && pathname === '/api/dashboard/bls/employment') {
+      usageService.recordUsage(sessionId, 'dashboard_bls_employment');
+
+      const startYear = url.searchParams.get('start_year') || (new Date().getFullYear() - 2).toString();
+      const endYear = url.searchParams.get('end_year') || new Date().getFullYear().toString();
+
+      const result = await blsTool.getEmploymentTrends(startYear, endYear);
+      return writeJson(res, 200, result);
+    }
+
+    // Get BLS pricing trends
+    if (req.method === 'GET' && pathname === '/api/dashboard/bls/pricing') {
+      usageService.recordUsage(sessionId, 'dashboard_bls_pricing');
+
+      const startYear = url.searchParams.get('start_year') || (new Date().getFullYear() - 2).toString();
+      const endYear = url.searchParams.get('end_year') || new Date().getFullYear().toString();
+
+      const result = await blsTool.getPricingTrends(startYear, endYear);
+      return writeJson(res, 200, result);
+    }
+
+    // Get BLS comprehensive report
+    if (req.method === 'GET' && pathname === '/api/dashboard/bls/report') {
+      usageService.recordUsage(sessionId, 'dashboard_bls_report');
+
+      const startYear = url.searchParams.get('start_year') || (new Date().getFullYear() - 2).toString();
+      const endYear = url.searchParams.get('end_year') || new Date().getFullYear().toString();
+
+      const result = await blsTool.getComprehensiveReport(startYear, endYear);
+      return writeJson(res, 200, result);
+    }
+
+    // Get Census national pharma manufacturing
+    if (req.method === 'GET' && pathname === '/api/dashboard/census/manufacturing') {
+      usageService.recordUsage(sessionId, 'dashboard_census_manufacturing');
+
+      const year = url.searchParams.get('year') || '2021';
+      const result = await censusTool.getNationalPharmaEmployment(year);
+      return writeJson(res, 200, result);
+    }
+
+    // Get Census manufacturing concentration analysis
+    if (req.method === 'GET' && pathname === '/api/dashboard/census/concentration') {
+      usageService.recordUsage(sessionId, 'dashboard_census_concentration');
+
+      const year = url.searchParams.get('year') || '2021';
+      const result = await censusTool.analyzeManufacturingConcentration(year);
+      return writeJson(res, 200, result);
+    }
+
+    // Get Census state demographics
+    if (req.method === 'GET' && pathname === '/api/dashboard/census/demographics') {
+      usageService.recordUsage(sessionId, 'dashboard_census_demographics');
+
+      const state = url.searchParams.get('state');
+      if (!state) {
+        return writeJson(res, 400, {
+          status: 'error',
+          error_message: 'State parameter is required'
+        });
+      }
+
+      const result = await censusTool.getStateDemographics(state);
+      return writeJson(res, 200, result);
+    }
+
+    // Get CMS hospitals by state
+    if (req.method === 'GET' && pathname === '/api/dashboard/cms/hospitals') {
+      usageService.recordUsage(sessionId, 'dashboard_cms_hospitals');
+
+      const state = url.searchParams.get('state');
+      if (!state) {
+        return writeJson(res, 400, {
+          status: 'error',
+          error_message: 'State parameter is required'
+        });
+      }
+
+      const result = await cmsTool.getHospitalsByState(state);
+      return writeJson(res, 200, result);
+    }
+
+    // Get CMS shortage impact analysis
+    if (req.method === 'GET' && pathname === '/api/dashboard/cms/shortage-impact') {
+      usageService.recordUsage(sessionId, 'dashboard_cms_impact');
+
+      const state = url.searchParams.get('state');
+      const category = url.searchParams.get('category');
+
+      if (!state || !category) {
+        return writeJson(res, 400, {
+          status: 'error',
+          error_message: 'State and category parameters are required'
+        });
+      }
+
+      const result = await cmsTool.analyzeShortageImpact(state, category);
+      return writeJson(res, 200, result);
+    }
+
+    // Get CDC health vulnerability assessment
+    if (req.method === 'GET' && pathname === '/api/dashboard/cdc/health-impact') {
+      usageService.recordUsage(sessionId, 'dashboard_cdc_impact');
+
+      const state = url.searchParams.get('state');
+      const category = url.searchParams.get('category');
+
+      if (!state || !category) {
+        return writeJson(res, 400, {
+          status: 'error',
+          error_message: 'State and category parameters are required'
+        });
+      }
+
+      const result = await cdcTool.analyzeShortageHealthImpact(state, category);
+      return writeJson(res, 200, result);
+    }
+
+    // Get CDC public health trends
+    if (req.method === 'GET' && pathname === '/api/dashboard/cdc/health-trends') {
+      usageService.recordUsage(sessionId, 'dashboard_cdc_trends');
+
+      const state = url.searchParams.get('state');
+      const year = url.searchParams.get('year') || new Date().getFullYear().toString();
+
+      if (!state) {
+        return writeJson(res, 400, {
+          status: 'error',
+          error_message: 'State parameter is required'
+        });
+      }
+
+      const result = await cdcTool.getPublicHealthTrends(state, year);
+      return writeJson(res, 200, result);
+    }
+
     // Get available therapeutic categories (for filter dropdowns)
     if (req.method === 'GET' && pathname === '/api/dashboard/therapeutic-classes') {
       usageService.recordUsage(sessionId, 'dashboard_categories');
@@ -372,6 +517,92 @@ const server = http.createServer(async (req, res) => {
           },
           {
             method: 'GET',
+            path: '/api/dashboard/bls/employment',
+            description: 'Get BLS pharmaceutical employment trends',
+            query_params: {
+              start_year: 'Start year (default: 2 years ago)',
+              end_year: 'End year (default: current year)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/bls/pricing',
+            description: 'Get BLS pharmaceutical pricing trends',
+            query_params: {
+              start_year: 'Start year (default: 2 years ago)',
+              end_year: 'End year (default: current year)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/bls/report',
+            description: 'Get comprehensive BLS labor market and pricing report',
+            query_params: {
+              start_year: 'Start year (default: 2 years ago)',
+              end_year: 'End year (default: current year)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/census/manufacturing',
+            description: 'Get national pharmaceutical manufacturing statistics',
+            query_params: {
+              year: 'Census year (default: 2021)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/census/concentration',
+            description: 'Get manufacturing concentration risk analysis',
+            query_params: {
+              year: 'Census year (default: 2021)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/census/demographics',
+            description: 'Get state demographic data',
+            query_params: {
+              state: 'State abbreviation (required)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/cms/hospitals',
+            description: 'Get hospital information by state',
+            query_params: {
+              state: 'State abbreviation (required)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/cms/shortage-impact',
+            description: 'Analyze drug shortage impact on healthcare facilities',
+            query_params: {
+              state: 'State abbreviation (required)',
+              category: 'Shortage therapeutic category (required)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/cdc/health-impact',
+            description: 'Assess public health vulnerability to drug shortages',
+            query_params: {
+              state: 'State abbreviation (required)',
+              category: 'Shortage therapeutic category (required)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/cdc/health-trends',
+            description: 'Get public health trends relevant to drug utilization',
+            query_params: {
+              state: 'State abbreviation (required)',
+              year: 'Year (default: current year)'
+            }
+          },
+          {
+            method: 'GET',
             path: '/api/dashboard/usage',
             description: 'Get API usage statistics for this session'
           },
@@ -381,7 +612,14 @@ const server = http.createServer(async (req, res) => {
             description: 'Clear all cached data (for debugging)'
           }
         ],
-        data_source: 'openFDA Drug Shortages API',
+        data_sources: [
+          'openFDA Drug Shortages API',
+          'Federal Reserve Economic Data (FRED)',
+          'Bureau of Labor Statistics (BLS)',
+          'U.S. Census Bureau',
+          'Centers for Medicare & Medicaid Services (CMS)',
+          'Centers for Disease Control and Prevention (CDC)'
+        ],
         documentation: 'https://github.com/Jerempire/healthcare-mcp-public'
       });
     }
