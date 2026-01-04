@@ -116,6 +116,77 @@
                 </div>
             </div>
 
+            <!-- Category Detailed Breakdown -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">📋 Category Detailed Analytics</h2>
+                    <p class="text-sm text-gray-600 mt-1">Comprehensive breakdown by therapeutic category with severity scoring</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Active</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Long-Running</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quick Resolve %</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturers</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Severity</th>
+                            </tr>
+                        </thead>
+                        <tbody id="category-breakdown-table" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Cohort Analysis -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">🗓️ Cohort Analysis</h2>
+                    <p class="text-sm text-gray-600 mt-1">Shortage patterns grouped by start year</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cohort Year</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Still Active</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resolved</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resolution Rate</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cohort-table" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Shortage Predictions -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+                <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
+                    <h2 class="text-lg font-semibold text-purple-900">🔮 Resolution Predictions (Top 20)</h2>
+                    <p class="text-sm text-purple-700 mt-1">Estimated resolution dates based on historical category averages</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Drug</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days Active</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Est. Remaining</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Predicted Resolution</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
+                            </tr>
+                        </thead>
+                        <tbody id="predictions-table" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Long-Running Active Shortages Alert -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
                 <div class="px-6 py-4 border-b border-gray-200 bg-red-50">
@@ -204,6 +275,9 @@
                     // Render tables
                     renderLongRunningTable(trends.long_running_active);
                     renderLongestTable(trends.longest_resolved);
+                    renderCategoryBreakdown(trends.category_breakdown);
+                    renderCohortAnalysis(trends.cohort_analysis);
+                    renderPredictions(trends.shortage_predictions);
 
                     // Render new analytics
                     renderYoYComparison(trends.yoy_comparison);
@@ -360,6 +434,14 @@
             });
         }
 
+        function getSeverityColor(days) {
+            if (days >= 5000) return 'border-l-4 border-red-700 bg-red-50';
+            if (days >= 2000) return 'border-l-4 border-orange-600 bg-orange-50';
+            if (days >= 1000) return 'border-l-4 border-yellow-500 bg-yellow-50';
+            if (days >= 365) return 'border-l-4 border-blue-500 bg-blue-50';
+            return '';
+        }
+
         function renderLongRunningTable(data) {
             const tbody = document.getElementById('long-running-table');
 
@@ -371,9 +453,10 @@
             tbody.innerHTML = data.map(item => {
                 const yearsActive = Math.floor(item.days_since_start / 365);
                 const variantText = item.variant_count > 1 ? ` (${item.variant_count} variants)` : '';
+                const colorClass = getSeverityColor(item.days_since_start);
 
                 return `
-                    <tr class="hover:bg-gray-50">
+                    <tr class="hover:bg-gray-50 ${colorClass}">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">
                             ${escapeHtml(item.drug)}${variantText}
                         </td>
@@ -555,6 +638,111 @@
                     </div>
                 </div>
             `;
+        }
+
+        function renderCategoryBreakdown(categories) {
+            const tbody = document.getElementById('category-breakdown-table');
+
+            if (categories.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-sm text-gray-500 text-center">No category data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = categories.map(cat => {
+                let severityBadge = '';
+                let severityColor = '';
+                if (cat.severity_score >= 50) {
+                    severityBadge = '🔴 Critical';
+                    severityColor = 'bg-red-100 text-red-800';
+                } else if (cat.severity_score >= 25) {
+                    severityBadge = '🟠 High';
+                    severityColor = 'bg-orange-100 text-orange-800';
+                } else if (cat.severity_score >= 10) {
+                    severityBadge = '🟡 Medium';
+                    severityColor = 'bg-yellow-100 text-yellow-800';
+                } else {
+                    severityBadge = '🟢 Low';
+                    severityColor = 'bg-green-100 text-green-800';
+                }
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(cat.category)}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${cat.active}</td>
+                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${cat.long_running_count}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${cat.quick_resolution_rate}%</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${cat.manufacturer_count}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${severityColor}">
+                                ${severityBadge} (${cat.severity_score})
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderCohortAnalysis(cohorts) {
+            const tbody = document.getElementById('cohort-table');
+
+            if (cohorts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-sm text-gray-500 text-center">No cohort data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = cohorts.map(cohort => {
+                const resolutionColor = cohort.resolution_rate >= 80 ? 'text-green-600' : (cohort.resolution_rate >= 50 ? 'text-yellow-600' : 'text-red-600');
+                const activeHighlight = cohort.still_active > cohort.resolved ? 'font-bold text-red-600' : '';
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">${cohort.cohort_year}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${cohort.total_shortages}</td>
+                        <td class="px-6 py-4 text-sm ${activeHighlight}">${cohort.still_active}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${cohort.resolved}</td>
+                        <td class="px-6 py-4 text-sm font-semibold ${resolutionColor}">${cohort.resolution_rate}%</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${cohort.avg_duration} days</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderPredictions(predictions) {
+            const tbody = document.getElementById('predictions-table');
+
+            if (predictions.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No predictions available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = predictions.map(pred => {
+                let confidenceBadge = '';
+                let confidenceColor = '';
+                if (pred.confidence === 'high') {
+                    confidenceBadge = '✅ High';
+                    confidenceColor = 'bg-green-100 text-green-800';
+                } else if (pred.confidence === 'medium') {
+                    confidenceBadge = '⚠️ Medium';
+                    confidenceColor = 'bg-yellow-100 text-yellow-800';
+                } else {
+                    confidenceBadge = '⚪ Low';
+                    confidenceColor = 'bg-gray-100 text-gray-800';
+                }
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(pred.drug)}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${pred.days_active} days</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-purple-600">${pred.estimated_days_remaining} days</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${pred.predicted_resolution_date}</td>
+                        <td class="px-6 py-4 text-sm">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium ${confidenceColor}">
+                                ${confidenceBadge}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function renderInsights(trends) {

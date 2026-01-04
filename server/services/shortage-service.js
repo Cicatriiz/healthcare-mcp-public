@@ -873,6 +873,112 @@ export class ShortageService {
         net_change: last30Days - last30DaysNew
       };
 
+      // 8. Category-specific detailed breakdown
+      const categoryDetails = {};
+      allShortages.forEach(s => {
+        const category = s.therapeutic_categories[0] || 'Unknown';
+        if (!categoryDetails[category]) {
+          categoryDetails[category] = {
+            total: 0,
+            active: 0,
+            resolved: 0,
+            long_running: 0,
+            resolved_in_90_days: 0,
+            manufacturers: new Set()
+          };
+        }
+        categoryDetails[category].total++;
+        categoryDetails[category].manufacturers.add(s.manufacturer);
+
+        if (s.status === 'active') {
+          categoryDetails[category].active++;
+          const start = new Date(s.initial_date);
+          const daysSince = Math.round((new Date() - start) / (1000 * 60 * 60 * 24));
+          if (daysSince >= 90) {
+            categoryDetails[category].long_running++;
+          }
+        } else {
+          categoryDetails[category].resolved++;
+          if (s.initial_date && s.resolution_date) {
+            const durationDays = Math.round((new Date(s.resolution_date) - new Date(s.initial_date)) / (1000 * 60 * 60 * 24));
+            if (durationDays <= 90) {
+              categoryDetails[category].resolved_in_90_days++;
+            }
+          }
+        }
+      });
+
+      const categoryBreakdown = Object.entries(categoryDetails).map(([category, stats]) => ({
+        category,
+        total_shortages: stats.total,
+        active: stats.active,
+        resolved: stats.resolved,
+        long_running_count: stats.long_running,
+        resolved_quickly: stats.resolved_in_90_days,
+        quick_resolution_rate: stats.resolved > 0 ? Math.round((stats.resolved_in_90_days / stats.resolved) * 100) : 0,
+        manufacturer_count: stats.manufacturers.size,
+        severity_score: (stats.active * 2) + (stats.long_running * 3)
+      })).sort((a, b) => b.severity_score - a.severity_score);
+
+      // 9. Cohort analysis - group by start year
+      const cohorts = {};
+      allShortages.forEach(s => {
+        if (s.initial_date) {
+          const year = new Date(s.initial_date).getFullYear();
+          if (!cohorts[year]) {
+            cohorts[year] = { total: 0, still_active: 0, resolved: 0, durations: [] };
+          }
+          cohorts[year].total++;
+          if (s.status === 'active') {
+            cohorts[year].still_active++;
+          } else {
+            cohorts[year].resolved++;
+            if (s.resolution_date) {
+              const durationDays = Math.round((new Date(s.resolution_date) - new Date(s.initial_date)) / (1000 * 60 * 60 * 24));
+              cohorts[year].durations.push(durationDays);
+            }
+          }
+        }
+      });
+
+      const cohortAnalysis = Object.entries(cohorts).map(([year, data]) => ({
+        cohort_year: parseInt(year),
+        total_shortages: data.total,
+        still_active: data.still_active,
+        resolved: data.resolved,
+        resolution_rate: Math.round((data.resolved / data.total) * 100),
+        avg_duration: data.durations.length > 0
+          ? Math.round(data.durations.reduce((sum, d) => sum + d, 0) / data.durations.length)
+          : 0
+      })).sort((a, b) => b.cohort_year - a.cohort_year);
+
+      // 10. Simple prediction for active shortages
+      const activeShortagePredictions = allShortages
+        .filter(s => s.status === 'active' && s.initial_date)
+        .map(s => {
+          const category = s.therapeutic_categories[0] || 'Unknown';
+          const categoryAvg = avgDurationByCategory.find(c => c.category === category);
+          const predictedDays = categoryAvg ? categoryAvg.avg_duration_days : (durations.length > 0 ? Math.round(durations.reduce((sum, d) => sum + d.duration_days, 0) / durations.length) : 90);
+
+          const startDate = new Date(s.initial_date);
+          const predictedEndDate = new Date(startDate.getTime() + (predictedDays * 24 * 60 * 60 * 1000));
+          const daysActive = Math.round((new Date() - startDate) / (1000 * 60 * 60 * 24));
+          const estimatedRemaining = Math.max(0, predictedDays - daysActive);
+
+          return {
+            ndc: s.ndc,
+            drug: s.generic_name,
+            days_active: daysActive,
+            predicted_total_duration: predictedDays,
+            estimated_days_remaining: estimatedRemaining,
+            predicted_resolution_date: predictedEndDate.toISOString().split('T')[0],
+            confidence: estimatedRemaining > predictedDays ? 'low' : (estimatedRemaining > predictedDays / 2 ? 'medium' : 'high')
+          };
+        })
+        .filter(p => p.estimated_days_remaining > 0)
+        .sort((a, b) => a.estimated_days_remaining - b.estimated_days_remaining)
+        .slice(0, 20);
+
       const response = {
         status: 'success',
         trends: {
@@ -890,7 +996,10 @@ export class ShortageService {
           resolved_shortages: allShortages.filter(s => s.status === 'resolved').length,
           manufacturer_risk: manufacturerRisk.slice(0, 15),
           yoy_comparison: yoyComparison,
-          resolution_velocity: resolutionVelocity
+          resolution_velocity: resolutionVelocity,
+          category_breakdown: categoryBreakdown.slice(0, 20),
+          cohort_analysis: cohortAnalysis.slice(0, 10),
+          shortage_predictions: activeShortagePredictions
         }
       };
 
