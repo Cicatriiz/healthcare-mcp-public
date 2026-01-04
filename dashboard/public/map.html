@@ -243,7 +243,12 @@
         }
 
         function getCoordinates(region) {
-            // Try to use state coordinates if available
+            // Use latitude/longitude from API if available
+            if (region.latitude && region.longitude) {
+                return [region.latitude, region.longitude];
+            }
+
+            // Fallback: Try to use state coordinates if available
             if (region.state && US_STATE_COORDS[region.state]) {
                 return US_STATE_COORDS[region.state];
             }
