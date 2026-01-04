@@ -971,25 +971,33 @@
 
             document.getElementById('economic-insights-content').innerHTML = insightsHtml || '<div class="text-gray-600 italic">No significant economic risk signals detected</div>';
 
-            // Update values and trends
-            if (analysis.production_trend) {
+            // Update values and trends - check if data exists
+            if (analysis.production_trend && indicators.pharmaceutical_production?.data) {
                 updateIndicatorCard('production', analysis.production_trend, indicators.pharmaceutical_production.data);
             }
-            if (analysis.employment_trend) {
+            if (analysis.employment_trend && indicators.manufacturing_employment?.data) {
                 updateIndicatorCard('employment', analysis.employment_trend, indicators.manufacturing_employment.data);
             }
-            if (analysis.price_trend) {
+            if (analysis.price_trend && indicators.producer_price_index?.data) {
                 updateIndicatorCard('price', analysis.price_trend, indicators.producer_price_index.data);
             }
-            if (analysis.supply_chain_trend) {
+            if (analysis.supply_chain_trend && indicators.supply_chain_pressure?.data) {
                 updateIndicatorCard('supply-chain', analysis.supply_chain_trend, indicators.supply_chain_pressure.data);
             }
 
-            // Render charts
-            renderEconomicChart('production-chart', indicators.pharmaceutical_production.data, 'Production Index', '#3b82f6');
-            renderEconomicChart('employment-chart', indicators.manufacturing_employment.data, 'Employment (thousands)', '#8b5cf6');
-            renderEconomicChart('price-chart', indicators.producer_price_index.data, 'Price Index', '#f59e0b');
-            renderEconomicChart('supply-chain-chart', indicators.supply_chain_pressure.data, 'Pressure Index', '#ef4444');
+            // Render charts only if data exists
+            if (indicators.pharmaceutical_production?.data?.length > 0) {
+                renderEconomicChart('production-chart', indicators.pharmaceutical_production.data, 'Production Index', '#3b82f6');
+            }
+            if (indicators.manufacturing_employment?.data?.length > 0) {
+                renderEconomicChart('employment-chart', indicators.manufacturing_employment.data, 'Employment (thousands)', '#8b5cf6');
+            }
+            if (indicators.producer_price_index?.data?.length > 0) {
+                renderEconomicChart('price-chart', indicators.producer_price_index.data, 'Price Index', '#f59e0b');
+            }
+            if (indicators.supply_chain_pressure?.data?.length > 0) {
+                renderEconomicChart('supply-chain-chart', indicators.supply_chain_pressure.data, 'Pressure Index', '#ef4444');
+            }
         }
 
         function updateIndicatorCard(type, trendData, data) {
@@ -1024,15 +1032,21 @@
             }
 
             // Prepare data - take last 24 data points
-            const chartData = data.slice(-24);
+            const chartData = Array.isArray(data) ? data.slice(-24) : [];
+
+            // Don't render if no data
+            if (chartData.length === 0) {
+                ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
+                return;
+            }
 
             new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: chartData.map(d => d.date),
+                    labels: chartData.map(d => d.date || ''),
                     datasets: [{
                         label: label,
-                        data: chartData.map(d => d.value),
+                        data: chartData.map(d => d.value || 0),
                         borderColor: color,
                         backgroundColor: color + '20',
                         borderWidth: 2,
