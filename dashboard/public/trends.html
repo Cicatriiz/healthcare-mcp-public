@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trends - FDA Drug Shortage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">FDA Drug Shortage Intelligence Dashboard</h1>
+                    <p class="text-sm text-gray-600 mt-1">Temporal Trends & Insights</p>
+                </div>
+                <nav class="flex space-x-4">
+                    <a href="index.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Shortages</a>
+                    <a href="analytics.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Analytics</a>
+                    <a href="trends.html" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium">Trends</a>
+                    <a href="map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Map</a>
+                    <a href="about.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">About</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-600">Loading trend analysis...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+            <div class="text-red-600 text-lg font-semibold mb-2">Error Loading Trends</div>
+            <div id="error-message" class="text-red-800"></div>
+        </div>
+
+        <!-- Content -->
+        <div id="content" class="hidden">
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="text-sm font-medium text-gray-600">Average Duration</div>
+                    <div class="mt-2 text-3xl font-bold text-blue-600" id="avg-duration">-</div>
+                    <div class="text-sm text-gray-500">days to resolution</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="text-sm font-medium text-gray-600">Median Duration</div>
+                    <div class="mt-2 text-3xl font-bold text-purple-600" id="median-duration">-</div>
+                    <div class="text-sm text-gray-500">days (middle value)</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="text-sm font-medium text-gray-600">Long-Running Active</div>
+                    <div class="mt-2 text-3xl font-bold text-red-600" id="long-running-count">-</div>
+                    <div class="text-sm text-gray-500">90+ days</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="text-sm font-medium text-gray-600">Longest Active</div>
+                    <div class="mt-2 text-3xl font-bold text-orange-600" id="longest-active">-</div>
+                    <div class="text-sm text-gray-500">days</div>
+                </div>
+            </div>
+
+            <!-- Timeline Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Monthly Shortage Trends</h2>
+                <canvas id="timeline-chart" height="80"></canvas>
+            </div>
+
+            <!-- Duration by Category -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Average Duration by Therapeutic Category</h2>
+                <canvas id="duration-chart" height="100"></canvas>
+            </div>
+
+            <!-- Long-Running Active Shortages Alert -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
+                <div class="px-6 py-4 border-b border-gray-200 bg-red-50">
+                    <h2 class="text-lg font-semibold text-red-900">⚠️ Critical: Long-Running Active Shortages (90+ Days)</h2>
+                    <p class="text-sm text-red-700 mt-1">These shortages have been active for extended periods</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Drug Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days Active</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
+                            </tr>
+                        </thead>
+                        <tbody id="long-running-table" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Longest Resolved -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Top 10 Longest Resolved Shortages</h2>
+                    <p class="text-sm text-gray-600 mt-1">Historical shortages with longest duration</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Drug Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
+                            </tr>
+                        </thead>
+                        <tbody id="longest-table" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/api-client.js"></script>
+    <script>
+        let timelineChart;
+        let durationChart;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTrends();
+        });
+
+        async function loadTrends() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const content = document.getElementById('content');
+
+            try {
+                loading.classList.remove('hidden');
+                error.classList.add('hidden');
+
+                const result = await api.request('/trends');
+
+                if (result.status === 'success') {
+                    const trends = result.trends;
+
+                    // Update metrics
+                    document.getElementById('avg-duration').textContent = trends.average_duration_days || 0;
+                    document.getElementById('median-duration').textContent = trends.median_duration_days || 0;
+                    document.getElementById('long-running-count').textContent = trends.long_running_active.length;
+                    document.getElementById('longest-active').textContent =
+                        trends.long_running_active.length > 0 ? trends.long_running_active[0].days_since_start : 0;
+
+                    // Render charts
+                    renderTimelineChart(trends.monthly);
+                    renderDurationChart(trends.avg_duration_by_category);
+
+                    // Render tables
+                    renderLongRunningTable(trends.long_running_active);
+                    renderLongestTable(trends.longest_resolved);
+
+                    content.classList.remove('hidden');
+                } else {
+                    throw new Error(result.error_message || 'Failed to load trends');
+                }
+            } catch (err) {
+                console.error('Error loading trends:', err);
+                document.getElementById('error-message').textContent = err.message;
+                error.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function renderTimelineChart(monthly) {
+            const ctx = document.getElementById('timeline-chart').getContext('2d');
+
+            if (timelineChart) {
+                timelineChart.destroy();
+            }
+
+            timelineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthly.map(d => d.month),
+                    datasets: [
+                        {
+                            label: 'Total Shortages',
+                            data: monthly.map(d => d.total),
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Active',
+                            data: monthly.map(d => d.active),
+                            borderColor: 'rgb(220, 38, 38)',
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Resolved',
+                            data: monthly.map(d => d.resolved),
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Shortages'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDurationChart(categories) {
+            const ctx = document.getElementById('duration-chart').getContext('2d');
+
+            // Filter out categories with 0 avg duration
+            const filtered = categories.filter(c => c.avg_duration_days > 0);
+
+            if (durationChart) {
+                durationChart.destroy();
+            }
+
+            durationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: filtered.map(d => d.category),
+                    datasets: [{
+                        label: 'Average Duration (Days)',
+                        data: filtered.map(d => d.avg_duration_days),
+                        backgroundColor: 'rgba(147, 51, 234, 0.8)',
+                        borderColor: 'rgba(147, 51, 234, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Days'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderLongRunningTable(data) {
+            const tbody = document.getElementById('long-running-table');
+
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td class="px-6 py-4 text-sm text-gray-900">${escapeHtml(item.drug)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.manufacturer)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.category)}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-red-600">${item.days_since_start} days</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.started}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderLongestTable(data) {
+            const tbody = document.getElementById('longest-table');
+
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td class="px-6 py-4 text-sm text-gray-900">${escapeHtml(item.drug)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.manufacturer)}</td>
+                    <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.category)}</td>
+                    <td class="px-6 py-4 text-sm font-bold text-purple-600">${item.duration_days} days</td>
+                    <td class="px-6 py-4 text-sm text-gray-500">${item.started} → ${item.resolved}</td>
+                </tr>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
