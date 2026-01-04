@@ -724,8 +724,9 @@ export class ShortageService {
         shortage_count: data.count
       })).sort((a, b) => b.avg_duration_days - a.avg_duration_days);
 
-      // 4. Long-running active shortages (90+ days)
-      const longRunning = allShortages.filter(s => {
+      // 4. Long-running active shortages (90+ days) - deduplicated by drug name
+      const longRunningMap = new Map();
+      allShortages.filter(s => {
         if (s.status === 'active' && s.initial_date) {
           const start = new Date(s.initial_date);
           const now = new Date();
@@ -733,19 +734,31 @@ export class ShortageService {
           return daysSince >= 90;
         }
         return false;
-      }).map(s => {
+      }).forEach(s => {
         const start = new Date(s.initial_date);
         const now = new Date();
         const daysSince = Math.round((now - start) / (1000 * 60 * 60 * 24));
-        return {
-          ndc: s.ndc,
-          drug: s.generic_name,
-          manufacturer: s.manufacturer,
-          category: s.therapeutic_categories[0] || 'Unknown',
-          days_since_start: daysSince,
-          started: s.initial_date
-        };
-      }).sort((a, b) => b.days_since_start - a.days_since_start);
+        const drugKey = s.generic_name.toLowerCase();
+
+        // Keep the longest duration for each unique drug
+        if (!longRunningMap.has(drugKey) || longRunningMap.get(drugKey).days_since_start < daysSince) {
+          longRunningMap.set(drugKey, {
+            ndc: s.ndc,
+            drug: s.generic_name,
+            manufacturer: s.manufacturer,
+            category: s.therapeutic_categories[0] || 'Unknown',
+            days_since_start: daysSince,
+            started: s.initial_date,
+            variant_count: 1
+          });
+        } else {
+          // Count variants
+          longRunningMap.get(drugKey).variant_count++;
+        }
+      });
+
+      const longRunning = Array.from(longRunningMap.values())
+        .sort((a, b) => b.days_since_start - a.days_since_start);
 
       // Convert month/year objects to arrays
       const monthlyTrend = Object.entries(byMonth)
@@ -756,6 +769,12 @@ export class ShortageService {
         .map(([year, data]) => ({ year: parseInt(year), ...data }))
         .sort((a, b) => a.year - b.year);
 
+      // Calculate median correctly (durations already sorted descending)
+      const sortedDurations = [...durations].sort((a, b) => a.duration_days - b.duration_days);
+      const medianDuration = sortedDurations.length > 0
+        ? sortedDurations[Math.floor(sortedDurations.length / 2)].duration_days
+        : 0;
+
       const response = {
         status: 'success',
         trends: {
@@ -764,12 +783,13 @@ export class ShortageService {
           average_duration_days: durations.length > 0
             ? Math.round(durations.reduce((sum, d) => sum + d.duration_days, 0) / durations.length)
             : 0,
-          median_duration_days: durations.length > 0
-            ? durations[Math.floor(durations.length / 2)].duration_days
-            : 0,
+          median_duration_days: medianDuration,
           longest_resolved: durations.slice(0, 10),
           long_running_active: longRunning.slice(0, 20),
-          avg_duration_by_category: avgDurationByCategory.slice(0, 15)
+          avg_duration_by_category: avgDurationByCategory.slice(0, 15),
+          total_shortages: allShortages.length,
+          active_shortages: allShortages.filter(s => s.status === 'active').length,
+          resolved_shortages: allShortages.filter(s => s.status === 'resolved').length
         }
       };
 

@@ -68,9 +68,18 @@
                 </div>
             </div>
 
+            <!-- Key Insights -->
+            <div id="insights-section" class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">📊 Key Insights</h2>
+                <div id="insights-content" class="space-y-2 text-sm text-gray-700">
+                    <!-- Insights will be populated here -->
+                </div>
+            </div>
+
             <!-- Timeline Chart -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Monthly Shortage Trends</h2>
+                <p class="text-sm text-gray-600 mb-4">Showing last 24 months of shortage activity</p>
                 <canvas id="timeline-chart" height="80"></canvas>
             </div>
 
@@ -167,6 +176,9 @@
                     renderLongRunningTable(trends.long_running_active);
                     renderLongestTable(trends.longest_resolved);
 
+                    // Render insights
+                    renderInsights(trends);
+
                     content.classList.remove('hidden');
                 } else {
                     throw new Error(result.error_message || 'Failed to load trends');
@@ -252,12 +264,26 @@
         function renderDurationChart(categories) {
             const ctx = document.getElementById('duration-chart').getContext('2d');
 
-            // Filter out categories with 0 avg duration
-            const filtered = categories.filter(c => c.avg_duration_days > 0);
+            // Filter out categories with 0 avg duration and limit to top 10
+            const filtered = categories.filter(c => c.avg_duration_days > 0).slice(0, 10);
 
             if (durationChart) {
                 durationChart.destroy();
             }
+
+            // Generate distinct colors for each category
+            const colors = [
+                'rgba(220, 38, 38, 0.8)',   // red
+                'rgba(245, 158, 11, 0.8)',  // orange
+                'rgba(59, 130, 246, 0.8)',  // blue
+                'rgba(16, 185, 129, 0.8)',  // green
+                'rgba(147, 51, 234, 0.8)',  // purple
+                'rgba(236, 72, 153, 0.8)',  // pink
+                'rgba(14, 165, 233, 0.8)',  // sky
+                'rgba(34, 197, 94, 0.8)',   // emerald
+                'rgba(251, 146, 60, 0.8)',  // orange-400
+                'rgba(168, 85, 247, 0.8)'   // violet
+            ];
 
             durationChart = new Chart(ctx, {
                 type: 'bar',
@@ -266,8 +292,8 @@
                     datasets: [{
                         label: 'Average Duration (Days)',
                         data: filtered.map(d => d.avg_duration_days),
-                        backgroundColor: 'rgba(147, 51, 234, 0.8)',
-                        borderColor: 'rgba(147, 51, 234, 1)',
+                        backgroundColor: filtered.map((_, i) => colors[i % colors.length]),
+                        borderColor: filtered.map((_, i) => colors[i % colors.length].replace('0.8', '1')),
                         borderWidth: 1
                     }]
                 },
@@ -278,6 +304,14 @@
                     plugins: {
                         legend: {
                             display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const category = filtered[context.dataIndex];
+                                    return `${category.shortage_count} shortages`;
+                                }
+                            }
                         }
                     },
                     scales: {
@@ -285,7 +319,7 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Days'
+                                text: 'Average Days'
                             }
                         }
                     }
@@ -296,29 +330,112 @@
         function renderLongRunningTable(data) {
             const tbody = document.getElementById('long-running-table');
 
-            tbody.innerHTML = data.map(item => `
-                <tr>
-                    <td class="px-6 py-4 text-sm text-gray-900">${escapeHtml(item.drug)}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.manufacturer)}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.category)}</td>
-                    <td class="px-6 py-4 text-sm font-bold text-red-600">${item.days_since_start} days</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">${item.started}</td>
-                </tr>
-            `).join('');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No long-running shortages (90+ days)</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const yearsActive = Math.floor(item.days_since_start / 365);
+                const variantText = item.variant_count > 1 ? ` (${item.variant_count} variants)` : '';
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                            ${escapeHtml(item.drug)}${variantText}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.manufacturer)}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.category)}</td>
+                        <td class="px-6 py-4 text-sm font-bold text-red-600">
+                            ${item.days_since_start} days
+                            ${yearsActive > 0 ? `<br><span class="text-xs text-gray-500">(${yearsActive}+ years)</span>` : ''}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${item.started}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         function renderLongestTable(data) {
             const tbody = document.getElementById('longest-table');
 
-            tbody.innerHTML = data.map(item => `
-                <tr>
-                    <td class="px-6 py-4 text-sm text-gray-900">${escapeHtml(item.drug)}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.manufacturer)}</td>
-                    <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.category)}</td>
-                    <td class="px-6 py-4 text-sm font-bold text-purple-600">${item.duration_days} days</td>
-                    <td class="px-6 py-4 text-sm text-gray-500">${item.started} → ${item.resolved}</td>
-                </tr>
-            `).join('');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No resolved shortages with duration data</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(item => {
+                const yearsResolved = Math.floor(item.duration_days / 365);
+
+                return `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(item.drug)}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.manufacturer)}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.category)}</td>
+                        <td class="px-6 py-4 text-sm font-bold text-purple-600">
+                            ${item.duration_days} days
+                            ${yearsResolved > 0 ? `<br><span class="text-xs text-gray-500">(${yearsResolved}+ years)</span>` : ''}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-500">
+                            <div class="flex flex-col">
+                                <span class="text-xs text-gray-400">Started:</span>
+                                <span>${item.started}</span>
+                                <span class="text-xs text-gray-400 mt-1">Resolved:</span>
+                                <span>${item.resolved}</span>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderInsights(trends) {
+            const insightsContent = document.getElementById('insights-content');
+            const insights = [];
+
+            // Trend direction
+            if (trends.monthly && trends.monthly.length >= 2) {
+                const recent = trends.monthly.slice(-3);
+                const avgRecent = recent.reduce((sum, m) => sum + m.active, 0) / recent.length;
+                const older = trends.monthly.slice(-6, -3);
+                const avgOlder = older.reduce((sum, m) => sum + m.active, 0) / older.length;
+
+                if (avgRecent > avgOlder * 1.1) {
+                    insights.push(`<strong>⚠️ Trend Alert:</strong> Active shortages are increasing - up ${Math.round(((avgRecent - avgOlder) / avgOlder) * 100)}% compared to previous quarter`);
+                } else if (avgRecent < avgOlder * 0.9) {
+                    insights.push(`<strong>✅ Positive Trend:</strong> Active shortages are decreasing - down ${Math.round(((avgOlder - avgRecent) / avgOlder) * 100)}% compared to previous quarter`);
+                }
+            }
+
+            // Duration insights
+            if (trends.average_duration_days && trends.median_duration_days) {
+                const diff = trends.average_duration_days - trends.median_duration_days;
+                if (diff > trends.median_duration_days * 0.5) {
+                    insights.push(`<strong>📈 Duration Analysis:</strong> Average (${trends.average_duration_days} days) is ${Math.round((diff / trends.median_duration_days) * 100)}% higher than median (${trends.median_duration_days} days), indicating some very long-lasting shortages skewing the data`);
+                }
+            }
+
+            // Long-running critical
+            if (trends.long_running_active && trends.long_running_active.length > 0) {
+                const criticalCount = trends.long_running_active.filter(s => s.days_since_start > 365).length;
+                if (criticalCount > 0) {
+                    insights.push(`<strong>🚨 Critical Alert:</strong> ${criticalCount} drugs have been in shortage for over 1 year - requiring immediate attention`);
+                }
+            }
+
+            // Category insights
+            if (trends.avg_duration_by_category && trends.avg_duration_by_category.length > 0) {
+                const topCategory = trends.avg_duration_by_category[0];
+                insights.push(`<strong>🎯 Category Risk:</strong> "${topCategory.category}" has the longest average shortage duration at ${topCategory.avg_duration_days} days (${topCategory.shortage_count} shortages)`);
+            }
+
+            // Summary statistics
+            if (trends.total_shortages) {
+                const activeRate = Math.round((trends.active_shortages / trends.total_shortages) * 100);
+                insights.push(`<strong>📊 Overall Status:</strong> ${activeRate}% of all recorded shortages (${trends.active_shortages} of ${trends.total_shortages}) are currently active`);
+            }
+
+            insightsContent.innerHTML = insights.map(i => `<div class="flex items-start"><span class="mr-2">•</span><span>${i}</span></div>`).join('');
         }
 
         function escapeHtml(text) {
