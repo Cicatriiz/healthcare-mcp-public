@@ -4,7 +4,7 @@
  */
 
 const API_BASE_URL = window.location.hostname === 'localhost'
-    ? 'http://localhost:3001/api/dashboard'
+    ? 'http://localhost:3000/api/dashboard'
     : '/api/dashboard'; // Production: assumes reverse proxy
 
 class DashboardAPI {
