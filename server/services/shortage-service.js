@@ -566,6 +566,13 @@ export class ShortageService {
       const shortages = result.shortages.filter(s => s.status === 'active');
       const byRegion = {};
 
+      // DEBUG: Sample contact_info to understand data format
+      const debugSamples = shortages.slice(0, 10).map(s => ({
+        drug: s.generic_name,
+        manufacturer: s.manufacturer,
+        contact_info: s.contact_info || 'NULL'
+      }));
+
       shortages.forEach(shortage => {
         const geoInfo = this.parseGeographicInfo(shortage.contact_info);
 
@@ -607,6 +614,7 @@ export class ShortageService {
         status: 'success',
         distribution,
         total_regions: distribution.length,
+        debug_contact_samples: debugSamples, // DEBUG: Show sample contact_info
         note: 'MVP implementation - geographic data parsed from contact_info field. Future enhancement will use proper geocoding API.'
       };
 
