@@ -17,6 +17,13 @@
 import http from 'http';
 import { URL } from 'url';
 import { randomUUID } from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// Get __dirname equivalent in ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Services and tools
 import { CacheService } from './cache-service.js';
@@ -313,6 +320,54 @@ const server = http.createServer(async (req, res) => {
         data_source: 'openFDA Drug Shortages API',
         documentation: 'https://github.com/Jerempire/healthcare-mcp-public'
       });
+    }
+
+    // Serve static files from ../dashboard/public
+    if (req.method === 'GET' && !pathname.startsWith('/api/')) {
+      const publicDir = path.join(__dirname, '..', 'dashboard', 'public');
+      let filePath = pathname === '/' ? 'index.html' : pathname;
+
+      // Remove leading slash
+      if (filePath.startsWith('/')) {
+        filePath = filePath.substring(1);
+      }
+
+      const fullPath = path.join(publicDir, filePath);
+
+      // Security: prevent directory traversal
+      if (!fullPath.startsWith(publicDir)) {
+        return writeJson(res, 403, {
+          status: 'error',
+          error_message: 'Forbidden'
+        });
+      }
+
+      // Check if file exists
+      if (fs.existsSync(fullPath) && fs.statSync(fullPath).isFile()) {
+        const ext = path.extname(fullPath);
+        const mimeTypes = {
+          '.html': 'text/html',
+          '.js': 'text/javascript',
+          '.css': 'text/css',
+          '.json': 'application/json',
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.svg': 'image/svg+xml',
+          '.ico': 'image/x-icon'
+        };
+
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+
+        res.writeHead(200, {
+          'Content-Type': contentType,
+          'Access-Control-Allow-Origin': '*'
+        });
+
+        const fileStream = fs.createReadStream(fullPath);
+        fileStream.pipe(res);
+        return;
+      }
     }
 
     // 404 - Not Found
