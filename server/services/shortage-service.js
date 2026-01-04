@@ -334,28 +334,27 @@ export class ShortageService {
     }
 
     try {
-      // Fetch active and all shortages for analysis
-      // Use high limit (1000 = FDA API max) to get comprehensive analytics
-      const [activeResult, allResult, categoriesResult, manufacturersResult] = await Promise.all([
-        this.fdaShortage.searchShortages({ status: 'active', limit: 1000 }),
-        this.fdaShortage.searchShortages({ status: 'all', limit: 1000 }),
+      // Fetch ALL shortages using pagination for complete analytics
+      const [allResult, categoriesResult, manufacturersResult] = await Promise.all([
+        this.fdaShortage.fetchAllShortages(),
         this.fdaShortage.getTherapeuticCategories(),
         this.fdaShortage.getManufacturers()
       ]);
 
-      if (activeResult.status === 'error') {
-        return activeResult;
+      if (allResult.status === 'error') {
+        return allResult;
       }
 
-      const activeShortages = activeResult.shortages || [];
       const allShortages = allResult.shortages || [];
+      const activeShortages = allShortages.filter(s => s.status === 'active');
+      const resolvedShortages = allShortages.filter(s => s.status === 'resolved');
 
       // Compute statistics
       const analytics = {
         summary: {
-          total_active: activeResult.total_results || 0,
-          total_all: allResult.total_results || 0,
-          total_resolved: (allResult.total_results || 0) - (activeResult.total_results || 0)
+          total_active: activeShortages.length,
+          total_all: allShortages.length,
+          total_resolved: resolvedShortages.length
         },
         by_category: this.groupByCategory(activeShortages),
         by_route: this.groupByRoute(activeShortages),
@@ -493,14 +492,15 @@ export class ShortageService {
     }
 
     try {
-      // Use high limit for comprehensive geographic data
-      const result = await this.fdaShortage.searchShortages({ status: 'active', limit: 1000 });
+      // Fetch ALL shortages using pagination for complete geographic data
+      const result = await this.fdaShortage.fetchAllShortages();
 
       if (result.status === 'error') {
         return result;
       }
 
-      const shortages = result.shortages || [];
+      // Filter for active shortages only
+      const shortages = result.shortages.filter(s => s.status === 'active');
       const byRegion = {};
 
       shortages.forEach(shortage => {
