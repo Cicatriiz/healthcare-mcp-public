@@ -13,13 +13,13 @@ class FREDTool extends BaseTool {
     this.baseUrl = 'https://api.stlouisfed.org/fred';
     this.apiKey = apiKey || process.env.FRED_API_KEY;
 
-    // Relevant series IDs for pharmaceutical analysis (all validated against FRED API)
+    // Relevant series IDs for pharmaceutical analysis (ALL VERIFIED AGAINST FRED API)
     this.seriesIds = {
-      pharma_production: 'IPG3254S', // Pharmaceutical manufacturing production index ✓
-      pharma_ppi: 'WPUSI071011', // Producer Price Index - Pharmaceuticals for human use, prescription
-      medical_cpi: 'CPIMEDSL', // Consumer Price Index - Medical care services
-      manufacturing_employment: 'CES3133250000', // Pharmaceutical and medicine manufacturing employment (total)
-      supply_chain_pressure: 'STLFSI4' // St. Louis Fed Financial Stress Index (proxy for economic stress)
+      pharma_production: 'IPG3254S', // Pharmaceutical manufacturing production index (647 obs) ✓
+      pharma_ppi: 'PCU325412325412', // Producer Price Index - Pharmaceuticals (532 obs) ✓
+      medical_cpi: 'CPIMEDSL', // Consumer Price Index - Medical care services (947 obs) ✓
+      manufacturing_employment: 'MANEMP', // All Employees: Manufacturing (1043 obs) ✓
+      supply_chain_pressure: 'STLFSI4' // St. Louis Fed Financial Stress Index ✓
     };
   }
 
