@@ -35,6 +35,7 @@ import { ClinicalTrialsTool } from './clinical-trials-tool.js';
 import { MedicalTerminologyTool } from './medical-terminology-tool.js';
 import { MedRxivTool } from './medrxiv-tool.js';
 import { NcbiBookshelfTool } from './ncbi-bookshelf-tool.js';
+import FREDTool from './fred-tool.js';
 import { UsageService } from './usage-service.js';
 import { ShortageService } from './services/shortage-service.js';
 
@@ -54,6 +55,7 @@ const clinicalTrialsTool = new ClinicalTrialsTool(cacheService);
 const medicalTerminologyTool = new MedicalTerminologyTool(cacheService);
 const medrxivTool = new MedRxivTool(cacheService);
 const ncbiBookshelfTool = new NcbiBookshelfTool(cacheService);
+const fredTool = new FREDTool(cacheService, process.env.FRED_API_KEY || '4532dbd3e3fb05a0ab2587a8e0ea25ec');
 
 // Initialize shortage service with all tools
 const shortageService = new ShortageService(
@@ -230,6 +232,27 @@ const server = http.createServer(async (req, res) => {
       return writeJson(res, 200, result);
     }
 
+    // Get economic indicators (FRED data)
+    if (req.method === 'GET' && pathname === '/api/dashboard/economic-indicators') {
+      usageService.recordUsage(sessionId, 'dashboard_economic_indicators');
+
+      const params = {
+        observation_start: url.searchParams.get('start') || undefined,
+        observation_end: url.searchParams.get('end') || undefined
+      };
+
+      const result = await fredTool.getEconomicIndicators(params);
+      return writeJson(res, 200, result);
+    }
+
+    // Get economic trend analysis
+    if (req.method === 'GET' && pathname === '/api/dashboard/economic-trends') {
+      usageService.recordUsage(sessionId, 'dashboard_economic_trends');
+
+      const result = await fredTool.analyzeTrends();
+      return writeJson(res, 200, result);
+    }
+
     // Get available therapeutic categories (for filter dropdowns)
     if (req.method === 'GET' && pathname === '/api/dashboard/therapeutic-classes') {
       usageService.recordUsage(sessionId, 'dashboard_categories');
@@ -327,6 +350,25 @@ const server = http.createServer(async (req, res) => {
             method: 'GET',
             path: '/api/dashboard/stats',
             description: 'Get summary statistics (active, resolved counts)'
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/trends',
+            description: 'Get temporal trends and comprehensive analytics'
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/economic-indicators',
+            description: 'Get pharmaceutical economic indicators from FRED',
+            query_params: {
+              start: 'Observation start date (YYYY-MM-DD)',
+              end: 'Observation end date (YYYY-MM-DD)'
+            }
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/economic-trends',
+            description: 'Get economic trend analysis with shortage risk insights'
           },
           {
             method: 'GET',

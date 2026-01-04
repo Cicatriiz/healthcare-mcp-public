@@ -117,6 +117,27 @@ class DashboardAPI {
     async getUsageStats() {
         return this.request('/usage');
     }
+
+    /**
+     * Get temporal trends
+     */
+    async getTemporalTrends() {
+        return this.request('/trends');
+    }
+
+    /**
+     * Get economic indicators from FRED
+     */
+    async getEconomicIndicators(params = {}) {
+        return this.request('/economic-indicators', params);
+    }
+
+    /**
+     * Get economic trend analysis
+     */
+    async getEconomicTrends() {
+        return this.request('/economic-trends');
+    }
 }
 
 // Create global API instance
