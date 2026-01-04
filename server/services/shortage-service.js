@@ -628,6 +628,162 @@ export class ShortageService {
       };
     }
   }
+
+  /**
+   * Temporal Trend Analysis
+   * Analyze shortage patterns over time
+   */
+  async getTemporalTrends() {
+    const cacheKey = this.cache.getCacheKey('shortage_temporal_trends');
+
+    const cachedResult = this.cache.get(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
+    try {
+      // Fetch ALL shortages for comprehensive analysis
+      const result = await this.fdaShortage.fetchAllShortages();
+
+      if (result.status === 'error') {
+        return result;
+      }
+
+      const allShortages = result.shortages;
+
+      // 1. Group by month/year (initial posting date)
+      const byMonth = {};
+      const byYear = {};
+
+      allShortages.forEach(shortage => {
+        if (shortage.initial_date) {
+          const date = new Date(shortage.initial_date);
+          const year = date.getFullYear();
+          const month = `${year}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+          // By month
+          if (!byMonth[month]) {
+            byMonth[month] = { active: 0, resolved: 0, total: 0 };
+          }
+          byMonth[month].total++;
+          if (shortage.status === 'active') {
+            byMonth[month].active++;
+          } else {
+            byMonth[month].resolved++;
+          }
+
+          // By year
+          if (!byYear[year]) {
+            byYear[year] = { active: 0, resolved: 0, total: 0 };
+          }
+          byYear[year].total++;
+          if (shortage.status === 'active') {
+            byYear[year].active++;
+          } else {
+            byYear[year].resolved++;
+          }
+        }
+      });
+
+      // 2. Calculate shortage duration (for resolved shortages)
+      const durations = [];
+      allShortages.forEach(shortage => {
+        if (shortage.status === 'resolved' && shortage.initial_date && shortage.resolution_date) {
+          const start = new Date(shortage.initial_date);
+          const end = new Date(shortage.resolution_date);
+          const durationDays = Math.round((end - start) / (1000 * 60 * 60 * 24));
+          if (durationDays >= 0) {
+            durations.push({
+              drug: shortage.generic_name,
+              manufacturer: shortage.manufacturer,
+              category: shortage.therapeutic_categories[0] || 'Unknown',
+              duration_days: durationDays,
+              started: shortage.initial_date,
+              resolved: shortage.resolution_date
+            });
+          }
+        }
+      });
+
+      // Sort durations
+      durations.sort((a, b) => b.duration_days - a.duration_days);
+
+      // 3. Calculate average duration by category
+      const durationByCategory = {};
+      durations.forEach(d => {
+        if (!durationByCategory[d.category]) {
+          durationByCategory[d.category] = { total_days: 0, count: 0 };
+        }
+        durationByCategory[d.category].total_days += d.duration_days;
+        durationByCategory[d.category].count++;
+      });
+
+      const avgDurationByCategory = Object.entries(durationByCategory).map(([category, data]) => ({
+        category,
+        avg_duration_days: Math.round(data.total_days / data.count),
+        shortage_count: data.count
+      })).sort((a, b) => b.avg_duration_days - a.avg_duration_days);
+
+      // 4. Long-running active shortages (90+ days)
+      const longRunning = allShortages.filter(s => {
+        if (s.status === 'active' && s.initial_date) {
+          const start = new Date(s.initial_date);
+          const now = new Date();
+          const daysSince = Math.round((now - start) / (1000 * 60 * 60 * 24));
+          return daysSince >= 90;
+        }
+        return false;
+      }).map(s => {
+        const start = new Date(s.initial_date);
+        const now = new Date();
+        const daysSince = Math.round((now - start) / (1000 * 60 * 60 * 24));
+        return {
+          ndc: s.ndc,
+          drug: s.generic_name,
+          manufacturer: s.manufacturer,
+          category: s.therapeutic_categories[0] || 'Unknown',
+          days_since_start: daysSince,
+          started: s.initial_date
+        };
+      }).sort((a, b) => b.days_since_start - a.days_since_start);
+
+      // Convert month/year objects to arrays
+      const monthlyTrend = Object.entries(byMonth)
+        .map(([month, data]) => ({ month, ...data }))
+        .sort((a, b) => a.month.localeCompare(b.month));
+
+      const yearlyTrend = Object.entries(byYear)
+        .map(([year, data]) => ({ year: parseInt(year), ...data }))
+        .sort((a, b) => a.year - b.year);
+
+      const response = {
+        status: 'success',
+        trends: {
+          monthly: monthlyTrend.slice(-24), // Last 24 months
+          yearly: yearlyTrend,
+          average_duration_days: durations.length > 0
+            ? Math.round(durations.reduce((sum, d) => sum + d.duration_days, 0) / durations.length)
+            : 0,
+          median_duration_days: durations.length > 0
+            ? durations[Math.floor(durations.length / 2)].duration_days
+            : 0,
+          longest_resolved: durations.slice(0, 10),
+          long_running_active: longRunning.slice(0, 20),
+          avg_duration_by_category: avgDurationByCategory.slice(0, 15)
+        }
+      };
+
+      this.cache.set(cacheKey, response, 3600);
+
+      return response;
+
+    } catch (error) {
+      return {
+        status: 'error',
+        error_message: `Error computing temporal trends: ${error.message}`
+      };
+    }
+  }
 }
 
 export default ShortageService;

@@ -222,6 +222,14 @@ const server = http.createServer(async (req, res) => {
       return writeJson(res, 200, result);
     }
 
+    // Get temporal trends
+    if (req.method === 'GET' && pathname === '/api/dashboard/trends') {
+      usageService.recordUsage(sessionId, 'dashboard_trends');
+
+      const result = await shortageService.getTemporalTrends();
+      return writeJson(res, 200, result);
+    }
+
     // Get available therapeutic categories (for filter dropdowns)
     if (req.method === 'GET' && pathname === '/api/dashboard/therapeutic-classes') {
       usageService.recordUsage(sessionId, 'dashboard_categories');
