@@ -1218,6 +1218,88 @@ export class ShortageService {
 
     return insights;
   }
+
+  /**
+   * Get summary statistics for dashboard
+   */
+  async getStats() {
+    try {
+      const result = await this.fdaShortage.fetchAllShortages();
+
+      if (result.status === 'error') {
+        return result;
+      }
+
+      const allShortages = result.shortages || [];
+      const activeShortages = allShortages.filter(s => s.status === 'active');
+      const resolvedShortages = allShortages.filter(s => s.status === 'resolved');
+
+      return {
+        status: 'success',
+        total_active: activeShortages.length,
+        total_resolved: resolvedShortages.length,
+        total_all: allShortages.length
+      };
+    } catch (error) {
+      return {
+        status: 'error',
+        error_message: `Error fetching stats: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get list of therapeutic categories
+   */
+  async getTherapeuticCategories() {
+    try {
+      return await this.fdaShortage.getTherapeuticCategories();
+    } catch (error) {
+      return {
+        status: 'error',
+        error_message: `Error fetching therapeutic categories: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get list of manufacturers
+   */
+  async getManufacturers() {
+    try {
+      return await this.fdaShortage.getManufacturers();
+    } catch (error) {
+      return {
+        status: 'error',
+        error_message: `Error fetching manufacturers: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get enriched shortage detail by NDC
+   */
+  async getShortageDetailEnriched(ndc, enrich = true) {
+    try {
+      const shortageResult = await this.getShortageDetail(ndc);
+
+      if (shortageResult.status === 'error') {
+        return shortageResult;
+      }
+
+      if (!enrich || !shortageResult.shortage) {
+        return shortageResult;
+      }
+
+      // Enrich the shortage with additional data
+      return await this.enrichShortage(shortageResult.shortage);
+    } catch (error) {
+      return {
+        status: 'error',
+        error_message: `Error fetching enriched shortage detail: ${error.message}`
+      };
+    }
+  }
 }
 
 export default ShortageService;

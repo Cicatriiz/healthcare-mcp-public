@@ -249,12 +249,40 @@ const server = http.createServer(async (req, res) => {
       }
 
       if (dashboardPath === '/shortages') {
-        const filters = {
+        const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+        const page = parseInt(url.searchParams.get('page') || '1', 10);
+        const skip = (page - 1) * limit;
+
+        const params = {
           status: url.searchParams.get('status') || 'all',
-          therapeutic_category: url.searchParams.get('therapeutic_category'),
-          manufacturer: url.searchParams.get('manufacturer')
+          therapeutic_category: url.searchParams.get('therapeutic_category') || undefined,
+          manufacturer: url.searchParams.get('manufacturer') || undefined,
+          query: url.searchParams.get('query') || undefined,
+          limit,
+          skip
         };
-        const result = await shortageService.getShortages(filters);
+
+        const result = await shortageService.fetchShortages(params);
+
+        if (result.status === 'success') {
+          // Transform pagination format to match frontend expectations
+          const total = result.total || 0;
+          const totalPages = Math.ceil(total / limit);
+
+          return writeJson(res, 200, {
+            status: 'success',
+            data: result.data,
+            pagination: {
+              page,
+              limit,
+              total,
+              totalPages,
+              hasPrev: page > 1,
+              hasNext: page < totalPages
+            }
+          });
+        }
+
         return writeJson(res, 200, result);
       }
 
