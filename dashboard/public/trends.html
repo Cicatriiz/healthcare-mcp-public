@@ -253,8 +253,24 @@
                 </div>
 
                 <!-- Economic Error State -->
-                <div id="economic-error" class="hidden bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                    <div class="text-yellow-800 text-sm" id="economic-error-message"></div>
+                <div id="economic-error" class="hidden bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6 mb-6">
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">ℹ️</span>
+                        <div>
+                            <h4 class="text-yellow-900 font-semibold mb-2">Economic Indicators Unavailable</h4>
+                            <p class="text-yellow-800 text-sm mb-2" id="economic-error-message"></p>
+                            <p class="text-yellow-700 text-xs">
+                                💡 <strong>Note:</strong> This feature integrates real-time data from the Federal Reserve Economic Data (FRED) API.
+                                In production environments with internet access, this section will display:
+                            </p>
+                            <ul class="text-yellow-700 text-xs mt-2 ml-6 list-disc space-y-1">
+                                <li>Pharmaceutical Production Index trends</li>
+                                <li>Manufacturing Employment statistics</li>
+                                <li>Producer Price Index for pharmaceuticals</li>
+                                <li>Supply Chain Pressure indicators</li>
+                            </ul>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Economic Content -->
@@ -928,15 +944,26 @@
                 ]);
 
                 if (indicatorsResult.status === 'success' && trendsResult.status === 'success') {
-                    renderEconomicIndicators(indicatorsResult, trendsResult);
-                    economicContent.classList.remove('hidden');
+                    // Check if we have any actual data
+                    const hasData =
+                        (indicatorsResult.pharmaceutical_production?.data?.length > 0) ||
+                        (indicatorsResult.manufacturing_employment?.data?.length > 0) ||
+                        (indicatorsResult.producer_price_index?.data?.length > 0) ||
+                        (indicatorsResult.supply_chain_pressure?.data?.length > 0);
+
+                    if (hasData) {
+                        renderEconomicIndicators(indicatorsResult, trendsResult);
+                        economicContent.classList.remove('hidden');
+                    } else {
+                        throw new Error('No economic data available from FRED API. External internet access required to fetch Federal Reserve Economic Data.');
+                    }
                 } else {
                     throw new Error('Failed to load economic data');
                 }
             } catch (error) {
                 console.error('Error loading economic data:', error);
                 document.getElementById('economic-error-message').textContent =
-                    'Economic indicators temporarily unavailable: ' + error.message;
+                    error.message || 'Economic indicators temporarily unavailable. This feature requires external API access to the Federal Reserve Economic Data (FRED) service.';
                 economicError.classList.remove('hidden');
             } finally {
                 economicLoading.classList.add('hidden');
