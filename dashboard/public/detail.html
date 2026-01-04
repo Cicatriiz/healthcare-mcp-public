@@ -6,6 +6,23 @@
     <title>Shortage Detail - FDA Drug Shortage Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .tab-button {
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-button:hover {
+            color: #111827;
+            border-bottom-color: #e5e7eb;
+        }
+        .tab-button.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <!-- Header -->
@@ -108,13 +125,57 @@
                 </dl>
             </div>
 
-            <!-- Enrichment Note -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <p class="text-sm text-blue-800">
-                    <strong>Note:</strong> Clinical enrichment features (PubMed articles, Health.gov guidelines, Clinical Trials, etc.)
-                    are available via the API. This UI shows basic shortage information. For full enrichment data,
-                    use the API endpoint: <code class="bg-blue-100 px-2 py-1 rounded">/api/dashboard/shortages/:ndc?enrich=true</code>
-                </p>
+            <!-- Clinical Enrichment Tabs -->
+            <div id="enrichment-section" class="hidden">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                    <div class="border-b border-gray-200">
+                        <nav class="flex -mb-px">
+                            <button onclick="switchTab('research')" id="tab-research" class="tab-button active">Research & Evidence</button>
+                            <button onclick="switchTab('guidelines')" id="tab-guidelines" class="tab-button">Guidelines</button>
+                            <button onclick="switchTab('trials')" id="tab-trials" class="tab-button">Clinical Trials</button>
+                            <button onclick="switchTab('alternatives')" id="tab-alternatives" class="tab-button">Alternatives</button>
+                        </nav>
+                    </div>
+
+                    <!-- Research Tab -->
+                    <div id="content-research" class="tab-content p-6">
+                        <h3 class="text-lg font-semibold mb-4">PubMed Articles</h3>
+                        <div id="pubmed-list" class="space-y-3"></div>
+
+                        <h3 class="text-lg font-semibold mt-6 mb-4">medRxiv Preprints</h3>
+                        <div id="medrxiv-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Guidelines Tab -->
+                    <div id="content-guidelines" class="tab-content hidden p-6">
+                        <h3 class="text-lg font-semibold mb-4">Health.gov Topics</h3>
+                        <div id="health-list" class="space-y-3"></div>
+
+                        <h3 class="text-lg font-semibold mt-6 mb-4">NCBI Bookshelf Resources</h3>
+                        <div id="bookshelf-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Trials Tab -->
+                    <div id="content-trials" class="tab-content hidden p-6">
+                        <h3 class="text-lg font-semibold mb-4">Clinical Trials</h3>
+                        <div id="trials-list" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Alternatives Tab -->
+                    <div id="content-alternatives" class="tab-content hidden p-6">
+                        <h3 class="text-lg font-semibold mb-4">Alternative Therapies</h3>
+                        <div id="alternatives-list" class="space-y-3"></div>
+
+                        <h3 class="text-lg font-semibold mt-6 mb-4">Related ICD-10 Codes</h3>
+                        <div id="icd-list" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Enrichment -->
+            <div id="enrichment-loading" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="mt-2 text-sm text-blue-800">Loading clinical context...</p>
             </div>
         </div>
     </main>
@@ -145,12 +206,17 @@
                 error.classList.add('hidden');
                 content.classList.add('hidden');
 
-                // Fetch shortage detail (without enrichment for now - just basic info)
-                const result = await api.getShortageDetail(ndc, false);
+                // Fetch shortage detail WITH enrichment
+                const result = await api.getShortageDetail(ndc, true);
 
                 if (result.status === 'success' && result.shortage) {
                     renderShortageDetail(result.shortage);
                     content.classList.remove('hidden');
+
+                    // Load enrichment data if available
+                    if (result.shortage.enrichment) {
+                        renderEnrichment(result.shortage.enrichment, result.shortage.enrichment_status);
+                    }
                 } else {
                     throw new Error(result.error_message || 'Shortage not found');
                 }
@@ -215,12 +281,164 @@
             }
         }
 
+        function renderEnrichment(enrichment, status) {
+            const enrichmentSection = document.getElementById('enrichment-section');
+
+            // Show enrichment section
+            enrichmentSection.classList.remove('hidden');
+
+            // Render PubMed articles
+            renderPubMedArticles(enrichment.pubmed_articles || []);
+
+            // Render medRxiv preprints
+            renderMedRxivPreprints(enrichment.medrxiv_preprints || []);
+
+            // Render Health.gov topics
+            renderHealthTopics(enrichment.health_guidelines || []);
+
+            // Render NCBI Bookshelf
+            renderBookshelfResources(enrichment.bookshelf_resources || []);
+
+            // Render Clinical Trials
+            renderClinicalTrials(enrichment.clinical_trials || []);
+
+            // Render Alternatives
+            renderAlternatives(enrichment.alternatives || []);
+
+            // Render ICD codes
+            renderICDCodes(enrichment.icd_codes || []);
+        }
+
+        function renderPubMedArticles(articles) {
+            const list = document.getElementById('pubmed-list');
+            if (!articles || articles.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No PubMed articles found</p>';
+                return;
+            }
+            list.innerHTML = articles.slice(0, 5).map(article => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="https://pubmed.ncbi.nlm.nih.gov/${article.pmid}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(article.title || 'Untitled')}</a>
+                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(article.authors || 'Unknown authors')}</p>
+                    <p class="text-xs text-gray-500">${article.journal || 'Unknown journal'} ${article.year ? '(' + article.year + ')' : ''}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderMedRxivPreprints(articles) {
+            const list = document.getElementById('medrxiv-list');
+            if (!articles || articles.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No medRxiv preprints found</p>';
+                return;
+            }
+            list.innerHTML = articles.slice(0, 5).map(article => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="${article.url || '#'}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(article.title || 'Untitled')}</a>
+                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(article.authors || 'Unknown authors')}</p>
+                    <p class="text-xs text-gray-500">${article.date || 'Unknown date'}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderHealthTopics(topics) {
+            const list = document.getElementById('health-list');
+            if (!topics || topics.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No health topics found</p>';
+                return;
+            }
+            list.innerHTML = topics.slice(0, 5).map(topic => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="${topic.url || '#'}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(topic.title || 'Untitled')}</a>
+                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(topic.description || '')}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderBookshelfResources(resources) {
+            const list = document.getElementById('bookshelf-list');
+            if (!resources || resources.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No NCBI Bookshelf resources found</p>';
+                return;
+            }
+            list.innerHTML = resources.slice(0, 5).map(resource => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="${resource.url || '#'}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(resource.title || 'Untitled')}</a>
+                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(resource.description || '')}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderClinicalTrials(trials) {
+            const list = document.getElementById('trials-list');
+            if (!trials || trials.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No clinical trials found</p>';
+                return;
+            }
+            list.innerHTML = trials.slice(0, 5).map(trial => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="https://clinicaltrials.gov/study/${trial.nct_id}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(trial.title || 'Untitled')}</a>
+                    <div class="mt-1 flex items-center gap-2">
+                        <span class="px-2 py-1 text-xs rounded-full ${trial.status === 'Recruiting' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${trial.status || 'Unknown'}</span>
+                        <span class="text-xs text-gray-500">${trial.condition || ''}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAlternatives(alternatives) {
+            const list = document.getElementById('alternatives-list');
+            if (!alternatives || alternatives.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No alternative therapies identified</p>';
+                return;
+            }
+            list.innerHTML = alternatives.map(alt => `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900">${escapeHtml(alt.generic_name || 'Unknown')}</h4>
+                    ${alt.brand_name ? `<p class="text-sm text-gray-600">${escapeHtml(alt.brand_name)}</p>` : ''}
+                    <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        <div><span class="text-gray-500">Manufacturer:</span> ${escapeHtml(alt.manufacturer || 'Unknown')}</div>
+                        <div><span class="text-gray-500">Form:</span> ${escapeHtml(alt.dosage_form || 'Unknown')}</div>
+                        <div><span class="text-gray-500">Strength:</span> ${Array.isArray(alt.strength) ? alt.strength.join(', ') : (alt.strength || 'Unknown')}</div>
+                        <div><span class="text-gray-500">Status:</span>
+                            <span class="px-2 py-1 rounded-full ${alt.status === 'resolved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${alt.status || 'Unknown'}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderICDCodes(codes) {
+            const list = document.getElementById('icd-list');
+            if (!codes || codes.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No related ICD-10 codes found</p>';
+                return;
+            }
+            list.innerHTML = codes.slice(0, 10).map(code => `
+                <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <div>
+                        <span class="font-mono text-sm font-medium text-blue-600">${escapeHtml(code.code || '')}</span>
+                        <span class="text-sm text-gray-900 ml-2">${escapeHtml(code.description || '')}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(`content-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        }
+
         function showError(message) {
             document.getElementById('error-message').textContent = message;
             document.getElementById('error').classList.remove('hidden');
         }
 
         function escapeHtml(text) {
+            if (!text) return '';
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
