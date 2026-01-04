@@ -85,8 +85,35 @@
 
             <!-- Duration by Category -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">Average Duration by Therapeutic Category</h2>
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Average Duration by Therapeutic Category (Top 10)</h2>
+                <p class="text-sm text-gray-600 mb-4">Hover over bars to see shortage counts</p>
                 <canvas id="duration-chart" height="100"></canvas>
+            </div>
+
+            <!-- Manufacturer Risk Analysis -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">🏭 Manufacturer Risk Analysis</h2>
+                <p class="text-sm text-gray-600 mb-4">Top 10 manufacturers by active shortage count</p>
+                <canvas id="manufacturer-risk-chart" height="100"></canvas>
+            </div>
+
+            <!-- Year-over-Year & Resolution Velocity -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <!-- YoY Comparison -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">📅 Year-over-Year Comparison</h2>
+                    <div id="yoy-content" class="space-y-3">
+                        <!-- YoY data will be populated here -->
+                    </div>
+                </div>
+
+                <!-- Resolution Velocity -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">⚡ Resolution Velocity (Last 30 Days)</h2>
+                    <div id="velocity-content" class="space-y-3">
+                        <!-- Velocity data will be populated here -->
+                    </div>
+                </div>
             </div>
 
             <!-- Long-Running Active Shortages Alert -->
@@ -142,6 +169,7 @@
     <script>
         let timelineChart;
         let durationChart;
+        let manufacturerRiskChart;
 
         document.addEventListener('DOMContentLoaded', () => {
             loadTrends();
@@ -171,10 +199,15 @@
                     // Render charts
                     renderTimelineChart(trends.monthly);
                     renderDurationChart(trends.avg_duration_by_category);
+                    renderManufacturerRiskChart(trends.manufacturer_risk);
 
                     // Render tables
                     renderLongRunningTable(trends.long_running_active);
                     renderLongestTable(trends.longest_resolved);
+
+                    // Render new analytics
+                    renderYoYComparison(trends.yoy_comparison);
+                    renderResolutionVelocity(trends.resolution_velocity);
 
                     // Render insights
                     renderInsights(trends);
@@ -389,6 +422,141 @@
             }).join('');
         }
 
+        function renderManufacturerRiskChart(manufacturers) {
+            const ctx = document.getElementById('manufacturer-risk-chart').getContext('2d');
+
+            const filtered = manufacturers.slice(0, 10);
+
+            if (manufacturerRiskChart) {
+                manufacturerRiskChart.destroy();
+            }
+
+            manufacturerRiskChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: filtered.map(m => m.manufacturer),
+                    datasets: [{
+                        label: 'Active Shortages',
+                        data: filtered.map(m => m.active_shortages),
+                        backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                        borderColor: 'rgba(220, 38, 38, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const mfg = filtered[context.dataIndex];
+                                    return [
+                                        `Long-running: ${mfg.long_running_count}`,
+                                        `Resolution rate: ${mfg.resolution_rate}%`,
+                                        `Avg resolution: ${mfg.avg_resolution_days} days`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Active Shortages'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderYoYComparison(yoy) {
+            const content = document.getElementById('yoy-content');
+
+            const activeChange = yoy.active_change_pct;
+            const activeIcon = activeChange > 0 ? '📈 ↑' : (activeChange < 0 ? '📉 ↓' : '➡️');
+            const activeColor = activeChange > 0 ? 'text-red-600' : (activeChange < 0 ? 'text-green-600' : 'text-gray-600');
+
+            const resolvedChange = yoy.resolved_change_pct;
+            const resolvedIcon = resolvedChange > 0 ? '📈 ↑' : (resolvedChange < 0 ? '📉 ↓' : '➡️');
+            const resolvedColor = resolvedChange > 0 ? 'text-green-600' : (resolvedChange < 0 ? 'text-red-600' : 'text-gray-600');
+
+            content.innerHTML = `
+                <div class="border-b pb-3">
+                    <div class="text-xs text-gray-500 mb-1">Active Shortages</div>
+                    <div class="flex items-baseline justify-between">
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900">${yoy.current_active}</span>
+                            <span class="text-sm text-gray-500 ml-2">${yoy.current_year}</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm ${activeColor} font-semibold">${activeIcon} ${Math.abs(activeChange)}%</div>
+                            <div class="text-xs text-gray-400">vs ${yoy.last_year_active} in ${yoy.last_year}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-b pb-3">
+                    <div class="text-xs text-gray-500 mb-1">Resolved Shortages</div>
+                    <div class="flex items-baseline justify-between">
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900">${yoy.current_resolved}</span>
+                            <span class="text-sm text-gray-500 ml-2">${yoy.current_year}</span>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-sm ${resolvedColor} font-semibold">${resolvedIcon} ${Math.abs(resolvedChange)}%</div>
+                            <div class="text-xs text-gray-400">vs ${yoy.last_year_resolved} in ${yoy.last_year}</div>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 mb-1">Total Shortages</div>
+                    <div class="flex items-baseline justify-between">
+                        <div>
+                            <span class="text-2xl font-bold text-gray-900">${yoy.current_total}</span>
+                            <span class="text-sm text-gray-500 ml-2">${yoy.current_year}</span>
+                        </div>
+                        <div class="text-xs text-gray-400">vs ${yoy.last_year_total} in ${yoy.last_year}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderResolutionVelocity(velocity) {
+            const content = document.getElementById('velocity-content');
+
+            const netChange = velocity.net_change;
+            const netIcon = netChange > 0 ? '✅' : (netChange < 0 ? '⚠️' : '➡️');
+            const netColor = netChange > 0 ? 'text-green-600' : (netChange < 0 ? 'text-red-600' : 'text-gray-600');
+            const netText = netChange > 0 ? 'Net improvement' : (netChange < 0 ? 'Net increase' : 'No net change');
+
+            content.innerHTML = `
+                <div class="border-b pb-3">
+                    <div class="text-xs text-gray-500 mb-1">Shortages Resolved</div>
+                    <div class="text-3xl font-bold text-green-600">${velocity.resolved_last_30_days}</div>
+                    <div class="text-xs text-gray-400 mt-1">In the last 30 days</div>
+                </div>
+                <div class="border-b pb-3">
+                    <div class="text-xs text-gray-500 mb-1">New Shortages Reported</div>
+                    <div class="text-3xl font-bold text-red-600">${velocity.new_last_30_days}</div>
+                    <div class="text-xs text-gray-400 mt-1">In the last 30 days</div>
+                </div>
+                <div>
+                    <div class="text-xs text-gray-500 mb-1">Net Change</div>
+                    <div class="flex items-baseline">
+                        <span class="text-2xl font-bold ${netColor}">${netIcon} ${Math.abs(netChange)}</span>
+                        <span class="text-sm text-gray-500 ml-2">${netText}</span>
+                    </div>
+                </div>
+            `;
+        }
+
         function renderInsights(trends) {
             const insightsContent = document.getElementById('insights-content');
             const insights = [];
@@ -433,6 +601,22 @@
             if (trends.total_shortages) {
                 const activeRate = Math.round((trends.active_shortages / trends.total_shortages) * 100);
                 insights.push(`<strong>📊 Overall Status:</strong> ${activeRate}% of all recorded shortages (${trends.active_shortages} of ${trends.total_shortages}) are currently active`);
+            }
+
+            // Manufacturer risk insights
+            if (trends.manufacturer_risk && trends.manufacturer_risk.length > 0) {
+                const topMfg = trends.manufacturer_risk[0];
+                insights.push(`<strong>🏭 Manufacturer Alert:</strong> ${topMfg.manufacturer} has the most active shortages (${topMfg.active_shortages}) with ${topMfg.long_running_count} long-running issues`);
+            }
+
+            // Resolution velocity insights
+            if (trends.resolution_velocity) {
+                const vel = trends.resolution_velocity;
+                if (vel.net_change > 0) {
+                    insights.push(`<strong>✅ Resolution Progress:</strong> ${vel.net_change} net reduction in last 30 days (${vel.resolved_last_30_days} resolved vs ${vel.new_last_30_days} new)`);
+                } else if (vel.net_change < 0) {
+                    insights.push(`<strong>⚠️ Growing Problem:</strong> ${Math.abs(vel.net_change)} net increase in last 30 days (${vel.new_last_30_days} new vs ${vel.resolved_last_30_days} resolved)`);
+                }
             }
 
             insightsContent.innerHTML = insights.map(i => `<div class="flex items-start"><span class="mr-2">•</span><span>${i}</span></div>`).join('');

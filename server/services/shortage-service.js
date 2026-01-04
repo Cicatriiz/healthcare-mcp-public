@@ -775,6 +775,104 @@ export class ShortageService {
         ? sortedDurations[Math.floor(sortedDurations.length / 2)].duration_days
         : 0;
 
+      // 5. Manufacturer Risk Analysis
+      const manufacturerStats = {};
+      allShortages.forEach(s => {
+        const mfg = s.manufacturer || 'Unknown';
+        if (!manufacturerStats[mfg]) {
+          manufacturerStats[mfg] = {
+            total: 0,
+            active: 0,
+            resolved: 0,
+            long_running: 0,
+            total_duration_days: 0,
+            resolved_count_for_avg: 0
+          };
+        }
+        manufacturerStats[mfg].total++;
+        if (s.status === 'active') {
+          manufacturerStats[mfg].active++;
+          const start = new Date(s.initial_date);
+          const daysSince = Math.round((new Date() - start) / (1000 * 60 * 60 * 24));
+          if (daysSince >= 90) {
+            manufacturerStats[mfg].long_running++;
+          }
+        } else {
+          manufacturerStats[mfg].resolved++;
+        }
+
+        // Calculate average resolution time
+        if (s.status === 'resolved' && s.initial_date && s.resolution_date) {
+          const durationDays = Math.round((new Date(s.resolution_date) - new Date(s.initial_date)) / (1000 * 60 * 60 * 24));
+          if (durationDays >= 0) {
+            manufacturerStats[mfg].total_duration_days += durationDays;
+            manufacturerStats[mfg].resolved_count_for_avg++;
+          }
+        }
+      });
+
+      const manufacturerRisk = Object.entries(manufacturerStats).map(([manufacturer, stats]) => ({
+        manufacturer,
+        total_shortages: stats.total,
+        active_shortages: stats.active,
+        resolved_shortages: stats.resolved,
+        long_running_count: stats.long_running,
+        avg_resolution_days: stats.resolved_count_for_avg > 0
+          ? Math.round(stats.total_duration_days / stats.resolved_count_for_avg)
+          : 0,
+        resolution_rate: stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0
+      })).sort((a, b) => b.active_shortages - a.active_shortages);
+
+      // 6. Year-over-year comparison
+      const currentYear = new Date().getFullYear();
+      const lastYear = currentYear - 1;
+
+      const currentYearData = yearlyTrend.find(y => y.year === currentYear) || { active: 0, resolved: 0, total: 0 };
+      const lastYearData = yearlyTrend.find(y => y.year === lastYear) || { active: 0, resolved: 0, total: 0 };
+
+      const yoyComparison = {
+        current_year: currentYear,
+        current_active: currentYearData.active,
+        current_resolved: currentYearData.resolved,
+        current_total: currentYearData.total,
+        last_year: lastYear,
+        last_year_active: lastYearData.active,
+        last_year_resolved: lastYearData.resolved,
+        last_year_total: lastYearData.total,
+        active_change_pct: lastYearData.active > 0
+          ? Math.round(((currentYearData.active - lastYearData.active) / lastYearData.active) * 100)
+          : 0,
+        resolved_change_pct: lastYearData.resolved > 0
+          ? Math.round(((currentYearData.resolved - lastYearData.resolved) / lastYearData.resolved) * 100)
+          : 0
+      };
+
+      // 7. Resolution velocity metrics
+      const now = new Date();
+      const last30Days = allShortages.filter(s => {
+        if (s.resolution_date) {
+          const resolvedDate = new Date(s.resolution_date);
+          const daysAgo = Math.round((now - resolvedDate) / (1000 * 60 * 60 * 24));
+          return daysAgo <= 30;
+        }
+        return false;
+      }).length;
+
+      const last30DaysNew = allShortages.filter(s => {
+        if (s.initial_date) {
+          const initialDate = new Date(s.initial_date);
+          const daysAgo = Math.round((now - initialDate) / (1000 * 60 * 60 * 24));
+          return daysAgo <= 30;
+        }
+        return false;
+      }).length;
+
+      const resolutionVelocity = {
+        resolved_last_30_days: last30Days,
+        new_last_30_days: last30DaysNew,
+        net_change: last30Days - last30DaysNew
+      };
+
       const response = {
         status: 'success',
         trends: {
@@ -789,7 +887,10 @@ export class ShortageService {
           avg_duration_by_category: avgDurationByCategory.slice(0, 15),
           total_shortages: allShortages.length,
           active_shortages: allShortages.filter(s => s.status === 'active').length,
-          resolved_shortages: allShortages.filter(s => s.status === 'resolved').length
+          resolved_shortages: allShortages.filter(s => s.status === 'resolved').length,
+          manufacturer_risk: manufacturerRisk.slice(0, 15),
+          yoy_comparison: yoyComparison,
+          resolution_velocity: resolutionVelocity
         }
       };
 
