@@ -465,6 +465,255 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Manufacturing Concentration Risk -->
+            <div id="manufacturing-risk-section" class="mt-8">
+                <div class="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-2">🏭 Manufacturing Concentration Risk</h2>
+                    <p class="text-sm text-gray-700">Geographic vulnerability analysis - pharmaceutical manufacturing distribution across states</p>
+                </div>
+
+                <!-- Manufacturing Loading State -->
+                <div id="manufacturing-loading" class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                    <p class="mt-2 text-sm text-gray-600">Analyzing manufacturing concentration...</p>
+                </div>
+
+                <!-- Manufacturing Error State -->
+                <div id="manufacturing-error" class="hidden bg-red-50 border-l-4 border-red-400 rounded-lg p-6 mb-6">
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">⚠️</span>
+                        <div>
+                            <h4 class="text-red-900 font-semibold mb-2">Manufacturing Data Unavailable</h4>
+                            <p class="text-red-800 text-sm" id="manufacturing-error-message"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manufacturing Content -->
+                <div id="manufacturing-content" class="hidden space-y-6">
+                    <!-- Concentration Alert -->
+                    <div id="concentration-alert" class="bg-red-50 border-l-4 border-red-500 rounded-lg p-6">
+                        <h4 class="text-red-900 font-semibold mb-2 flex items-center">
+                            <span class="text-xl mr-2">🚨</span>
+                            <span id="concentration-alert-title">Concentration Risk Assessment</span>
+                        </h4>
+                        <p class="text-red-800 text-sm" id="concentration-alert-message"></p>
+                    </div>
+
+                    <!-- Key Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Top 3 States</div>
+                            <div class="mt-2 text-3xl font-bold text-red-600" id="top3-concentration">-</div>
+                            <div class="text-sm text-gray-500">of total manufacturing</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Top 5 States</div>
+                            <div class="mt-2 text-3xl font-bold text-orange-600" id="top5-concentration">-</div>
+                            <div class="text-sm text-gray-500">of total manufacturing</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Risk Level</div>
+                            <div class="mt-2 text-2xl font-bold" id="concentration-risk-level">-</div>
+                            <div class="text-sm text-gray-500" id="concentration-risk-desc">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Top Manufacturing States -->
+                    <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                        <div class="px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-semibold text-gray-900">📊 Top Manufacturing States</h3>
+                            <p class="text-sm text-gray-600 mt-1">Pharmaceutical manufacturing employment by state</p>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Rank</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">State</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employees</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Establishments</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">% of Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="manufacturing-table" class="bg-white divide-y divide-gray-200">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hospital Impact Analysis -->
+            <div id="hospital-impact-section" class="mt-8">
+                <div class="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-lg p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-2">🏥 Hospital Impact Analysis</h2>
+                    <p class="text-sm text-gray-700">Healthcare facility vulnerability to drug shortages by state</p>
+                </div>
+
+                <!-- State Selector -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select State for Analysis:</label>
+                    <select id="hospital-state-select" class="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500">
+                        <option value="">-- Select State --</option>
+                        <option value="01">Alabama</option>
+                        <option value="02">Alaska</option>
+                        <option value="04">Arizona</option>
+                        <option value="05">Arkansas</option>
+                        <option value="06">California</option>
+                        <option value="08">Colorado</option>
+                        <option value="09">Connecticut</option>
+                        <option value="10">Delaware</option>
+                        <option value="12">Florida</option>
+                        <option value="13">Georgia</option>
+                        <option value="15">Hawaii</option>
+                        <option value="16">Idaho</option>
+                        <option value="17">Illinois</option>
+                        <option value="18">Indiana</option>
+                        <option value="19">Iowa</option>
+                        <option value="20">Kansas</option>
+                        <option value="21">Kentucky</option>
+                        <option value="22">Louisiana</option>
+                        <option value="23">Maine</option>
+                        <option value="24">Maryland</option>
+                        <option value="25">Massachusetts</option>
+                        <option value="26">Michigan</option>
+                        <option value="27">Minnesota</option>
+                        <option value="28">Mississippi</option>
+                        <option value="29">Missouri</option>
+                        <option value="30">Montana</option>
+                        <option value="31">Nebraska</option>
+                        <option value="32">Nevada</option>
+                        <option value="33">New Hampshire</option>
+                        <option value="34">New Jersey</option>
+                        <option value="35">New Mexico</option>
+                        <option value="36">New York</option>
+                        <option value="37">North Carolina</option>
+                        <option value="38">North Dakota</option>
+                        <option value="39">Ohio</option>
+                        <option value="40">Oklahoma</option>
+                        <option value="41">Oregon</option>
+                        <option value="42">Pennsylvania</option>
+                        <option value="44">Rhode Island</option>
+                        <option value="45">South Carolina</option>
+                        <option value="46">South Dakota</option>
+                        <option value="47">Tennessee</option>
+                        <option value="48">Texas</option>
+                        <option value="49">Utah</option>
+                        <option value="50">Vermont</option>
+                        <option value="51">Virginia</option>
+                        <option value="53">Washington</option>
+                        <option value="54">West Virginia</option>
+                        <option value="55">Wisconsin</option>
+                        <option value="56">Wyoming</option>
+                    </select>
+                </div>
+
+                <!-- Hospital Loading State -->
+                <div id="hospital-loading" class="hidden text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <p class="mt-2 text-sm text-gray-600">Loading hospital data...</p>
+                </div>
+
+                <!-- Hospital Error State -->
+                <div id="hospital-error" class="hidden bg-red-50 border-l-4 border-red-400 rounded-lg p-6 mb-6">
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">⚠️</span>
+                        <div>
+                            <h4 class="text-red-900 font-semibold mb-2">Hospital Data Unavailable</h4>
+                            <p class="text-red-800 text-sm" id="hospital-error-message"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hospital Content -->
+                <div id="hospital-content" class="hidden space-y-6">
+                    <!-- Hospital Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Total Hospitals</div>
+                            <div class="mt-2 text-3xl font-bold text-blue-600" id="hospital-count">-</div>
+                            <div class="text-sm text-gray-500">in state</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Emergency Services</div>
+                            <div class="mt-2 text-3xl font-bold text-green-600" id="emergency-count">-</div>
+                            <div class="text-sm text-gray-500">facilities</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Impact Risk</div>
+                            <div class="mt-2 text-2xl font-bold" id="hospital-risk-level">-</div>
+                            <div class="text-sm text-gray-500" id="hospital-risk-desc">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Impact Assessment -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">💊 Shortage Impact Assessment</h3>
+                        <p class="text-sm text-gray-700" id="hospital-impact-description"></p>
+                        <p class="text-sm text-blue-800 mt-3 font-semibold" id="hospital-recommendation"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Health Vulnerability Assessment -->
+            <div id="health-vulnerability-section" class="mt-8">
+                <div class="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-2">👥 Health Vulnerability Assessment</h2>
+                    <p class="text-sm text-gray-700">Patient population risk analysis by shortage category</p>
+                </div>
+
+                <!-- Category Selector -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Select Shortage Category:</label>
+                    <select id="vulnerability-category-select" class="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500">
+                        <option value="">-- Select Category --</option>
+                        <option value="antibiotic">Antibiotics</option>
+                        <option value="cardiovascular">Cardiovascular</option>
+                        <option value="anesthesia">Anesthesia/Sedation</option>
+                        <option value="oncology">Oncology/Chemotherapy</option>
+                        <option value="diabetes">Diabetes/Insulin</option>
+                    </select>
+                </div>
+
+                <!-- Vulnerability Loading State -->
+                <div id="vulnerability-loading" class="hidden text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <p class="mt-2 text-sm text-gray-600">Analyzing health vulnerability...</p>
+                </div>
+
+                <!-- Vulnerability Error State -->
+                <div id="vulnerability-error" class="hidden bg-red-50 border-l-4 border-red-400 rounded-lg p-6 mb-6">
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">⚠️</span>
+                        <div>
+                            <h4 class="text-red-900 font-semibold mb-2">Vulnerability Data Unavailable</h4>
+                            <p class="text-red-800 text-sm" id="vulnerability-error-message"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Vulnerability Content -->
+                <div id="vulnerability-content" class="hidden space-y-6">
+                    <!-- Risk Level -->
+                    <div class="bg-purple-50 border-l-4 rounded-lg p-6" id="vulnerability-alert">
+                        <h4 class="font-semibold mb-2 flex items-center" id="vulnerability-alert-title">
+                            <span class="text-xl mr-2">📊</span>
+                            Vulnerability Risk Level
+                        </h4>
+                        <p class="text-sm mb-3" id="vulnerability-risk-level">-</p>
+                        <div class="mt-4">
+                            <h5 class="font-semibold text-sm mb-2">Affected Populations:</h5>
+                            <ul class="list-disc list-inside text-sm" id="affected-populations"></ul>
+                        </div>
+                        <div class="mt-4">
+                            <h5 class="font-semibold text-sm mb-2">Recommendations:</h5>
+                            <ul class="list-disc list-inside text-sm" id="vulnerability-recommendations"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -481,6 +730,20 @@
             loadTrends();
             loadEconomicData();
             loadShortageReasons();
+            loadManufacturingConcentration();
+
+            // Event listeners for interactive sections
+            document.getElementById('hospital-state-select').addEventListener('change', (e) => {
+                if (e.target.value) {
+                    loadHospitalImpact(e.target.value);
+                }
+            });
+
+            document.getElementById('vulnerability-category-select').addEventListener('change', (e) => {
+                if (e.target.value) {
+                    loadHealthVulnerability(e.target.value);
+                }
+            });
         });
 
         async function loadTrends() {
@@ -1453,6 +1716,219 @@
                     </tr>
                 `;
             }).join('');
+        }
+
+        // Manufacturing Concentration Risk Analysis
+        async function loadManufacturingConcentration() {
+            const manufacturingLoading = document.getElementById('manufacturing-loading');
+            const manufacturingError = document.getElementById('manufacturing-error');
+            const manufacturingContent = document.getElementById('manufacturing-content');
+
+            try {
+                manufacturingLoading.classList.remove('hidden');
+                manufacturingError.classList.add('hidden');
+
+                const result = await api.getManufacturingConcentration();
+
+                if (result.status === 'success') {
+                    renderManufacturingConcentration(result);
+                    manufacturingContent.classList.remove('hidden');
+                } else {
+                    throw new Error(result.error_message || 'Failed to load manufacturing concentration data');
+                }
+            } catch (error) {
+                console.error('Error loading manufacturing concentration:', error);
+                document.getElementById('manufacturing-error-message').textContent = error.message;
+                manufacturingError.classList.remove('hidden');
+            } finally {
+                manufacturingLoading.classList.add('hidden');
+            }
+        }
+
+        function renderManufacturingConcentration(data) {
+            const analysis = data.concentration_analysis;
+            const topStates = data.top_manufacturing_states || [];
+
+            // Update stats
+            document.getElementById('top3-concentration').textContent = analysis.top_3_states_percentage + '%';
+            document.getElementById('top5-concentration').textContent = analysis.top_5_states_percentage + '%';
+
+            // Risk level with color coding
+            const riskLevel = analysis.concentration_risk;
+            let riskColor = 'text-yellow-600';
+            let riskText = 'Moderate';
+
+            if (riskLevel === 'very_high') {
+                riskColor = 'text-red-600';
+                riskText = 'VERY HIGH';
+            } else if (riskLevel === 'high') {
+                riskColor = 'text-orange-600';
+                riskText = 'HIGH';
+            }
+
+            document.getElementById('concentration-risk-level').className = `mt-2 text-2xl font-bold ${riskColor}`;
+            document.getElementById('concentration-risk-level').textContent = riskText;
+            document.getElementById('concentration-risk-desc').textContent = 'Geographic concentration';
+
+            // Alert message
+            const insights = analysis.insights || [];
+            const alertMessage = insights.length > 0 ? insights.map(i => i.message).join(' ') : 'Manufacturing concentration analysis complete.';
+            document.getElementById('concentration-alert-message').textContent = alertMessage;
+
+            // Render table
+            const tbody = document.getElementById('manufacturing-table');
+            tbody.innerHTML = topStates.map((state, index) => {
+                const employeePercentage = ((state.employees / data.national_totals.employees) * 100).toFixed(1);
+                const highlightClass = index < 3 ? 'bg-red-50' : '';
+
+                return `
+                    <tr class="hover:bg-gray-50 ${highlightClass}">
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">#${index + 1}</td>
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(state.state_name)}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${state.employees.toLocaleString()}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${state.establishments}</td>
+                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">${employeePercentage}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Hospital Impact Analysis
+        async function loadHospitalImpact(state) {
+            const hospitalLoading = document.getElementById('hospital-loading');
+            const hospitalError = document.getElementById('hospital-error');
+            const hospitalContent = document.getElementById('hospital-content');
+
+            try {
+                hospitalLoading.classList.remove('hidden');
+                hospitalError.classList.add('hidden');
+                hospitalContent.classList.add('hidden');
+
+                // Use a generic shortage category for state-level analysis
+                const result = await api.getHospitalImpact(state, 'pharmaceutical');
+
+                if (result.status === 'success') {
+                    renderHospitalImpact(result);
+                    hospitalContent.classList.remove('hidden');
+                } else {
+                    throw new Error(result.error_message || 'Failed to load hospital impact data');
+                }
+            } catch (error) {
+                console.error('Error loading hospital impact:', error);
+                document.getElementById('hospital-error-message').textContent = error.message;
+                hospitalError.classList.remove('hidden');
+            } finally {
+                hospitalLoading.classList.add('hidden');
+            }
+        }
+
+        function renderHospitalImpact(data) {
+            // Update stats
+            document.getElementById('hospital-count').textContent = data.hospital_count || 0;
+            document.getElementById('emergency-count').textContent = data.facilities_with_emergency_services || 0;
+
+            // Risk level
+            const impact = data.potential_impact_assessment;
+            const riskLevel = impact.risk_level;
+            let riskColor = 'text-yellow-600';
+            let riskText = 'Moderate';
+
+            if (riskLevel === 'high') {
+                riskColor = 'text-red-600';
+                riskText = 'HIGH';
+            } else if (riskLevel === 'low') {
+                riskColor = 'text-green-600';
+                riskText = 'LOW';
+            }
+
+            document.getElementById('hospital-risk-level').className = `mt-2 text-2xl font-bold ${riskColor}`;
+            document.getElementById('hospital-risk-level').textContent = riskText;
+            document.getElementById('hospital-risk-desc').textContent = 'Shortage impact';
+
+            // Impact description and recommendation
+            document.getElementById('hospital-impact-description').textContent = impact.description;
+            document.getElementById('hospital-recommendation').textContent = '💡 Recommendation: ' + impact.recommendation;
+        }
+
+        // Health Vulnerability Assessment
+        async function loadHealthVulnerability(category) {
+            const vulnerabilityLoading = document.getElementById('vulnerability-loading');
+            const vulnerabilityError = document.getElementById('vulnerability-error');
+            const vulnerabilityContent = document.getElementById('vulnerability-content');
+
+            try {
+                vulnerabilityLoading.classList.remove('hidden');
+                vulnerabilityError.classList.add('hidden');
+                vulnerabilityContent.classList.add('hidden');
+
+                // Use a default state (national level analysis)
+                const result = await api.getHealthVulnerability('US', category);
+
+                if (result.status === 'success') {
+                    renderHealthVulnerability(result, category);
+                    vulnerabilityContent.classList.remove('hidden');
+                } else {
+                    throw new Error(result.error_message || 'Failed to load vulnerability data');
+                }
+            } catch (error) {
+                console.error('Error loading vulnerability:', error);
+                document.getElementById('vulnerability-error-message').textContent = error.message;
+                vulnerabilityError.classList.remove('hidden');
+            } finally {
+                vulnerabilityLoading.classList.add('hidden');
+            }
+        }
+
+        function renderHealthVulnerability(data, category) {
+            const vulnerability = data.health_vulnerability_assessment;
+            const riskLevel = vulnerability.risk_level;
+
+            // Update alert box styling and color
+            const alertBox = document.getElementById('vulnerability-alert');
+            let borderColor = 'border-yellow-400';
+            let bgColor = 'bg-yellow-50';
+            let textColor = 'text-yellow-900';
+            let riskText = 'MODERATE RISK';
+
+            if (riskLevel === 'very_high') {
+                borderColor = 'border-red-500';
+                bgColor = 'bg-red-50';
+                textColor = 'text-red-900';
+                riskText = 'VERY HIGH RISK';
+            } else if (riskLevel === 'high') {
+                borderColor = 'border-orange-500';
+                bgColor = 'bg-orange-50';
+                textColor = 'text-orange-900';
+                riskText = 'HIGH RISK';
+            } else if (riskLevel === 'low') {
+                borderColor = 'border-green-400';
+                bgColor = 'bg-green-50';
+                textColor = 'text-green-900';
+                riskText = 'LOW RISK';
+            }
+
+            alertBox.className = `${bgColor} border-l-4 ${borderColor} rounded-lg p-6`;
+
+            const titleElement = document.getElementById('vulnerability-alert-title');
+            titleElement.className = `${textColor} font-semibold mb-2 flex items-center`;
+            titleElement.innerHTML = `<span class="text-xl mr-2">📊</span> ${riskText}: ${category.charAt(0).toUpperCase() + category.slice(1)} Shortage`;
+
+            document.getElementById('vulnerability-risk-level').className = `text-sm mb-3 ${textColor}`;
+            document.getElementById('vulnerability-risk-level').textContent = `This shortage category poses ${riskLevel.replace('_', ' ')} risk to patient populations.`;
+
+            // Affected populations
+            const populationsList = document.getElementById('affected-populations');
+            populationsList.className = `list-disc list-inside text-sm ${textColor}`;
+            populationsList.innerHTML = vulnerability.affected_populations.map(pop =>
+                `<li>${escapeHtml(pop)}</li>`
+            ).join('');
+
+            // Recommendations
+            const recommendationsList = document.getElementById('vulnerability-recommendations');
+            recommendationsList.className = `list-disc list-inside text-sm ${textColor}`;
+            recommendationsList.innerHTML = vulnerability.recommendations.map(rec =>
+                `<li>${escapeHtml(rec)}</li>`
+            ).join('');
         }
     </script>
 </body>
