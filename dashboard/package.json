@@ -4,8 +4,8 @@
   "description": "FDA Drug Shortage Intelligence Dashboard",
   "type": "module",
   "scripts": {
-    "start": "node server-integrated.js",
-    "dev": "node server-integrated.js"
+    "start": "node simple-server.js",
+    "dev": "node simple-server.js"
   },
   "author": "",
   "license": "MIT",
