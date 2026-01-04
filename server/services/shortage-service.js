@@ -335,9 +335,10 @@ export class ShortageService {
 
     try {
       // Fetch active and all shortages for analysis
+      // Use high limit (1000 = FDA API max) to get comprehensive analytics
       const [activeResult, allResult, categoriesResult, manufacturersResult] = await Promise.all([
-        this.fdaShortage.searchShortages({ status: 'active', limit: 100 }),
-        this.fdaShortage.searchShortages({ status: 'all', limit: 100 }),
+        this.fdaShortage.searchShortages({ status: 'active', limit: 1000 }),
+        this.fdaShortage.searchShortages({ status: 'all', limit: 1000 }),
         this.fdaShortage.getTherapeuticCategories(),
         this.fdaShortage.getManufacturers()
       ]);
@@ -492,7 +493,8 @@ export class ShortageService {
     }
 
     try {
-      const result = await this.fdaShortage.searchShortages({ status: 'active', limit: 100 });
+      // Use high limit for comprehensive geographic data
+      const result = await this.fdaShortage.searchShortages({ status: 'active', limit: 1000 });
 
       if (result.status === 'error') {
         return result;

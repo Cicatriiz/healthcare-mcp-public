@@ -314,10 +314,10 @@ export class FDAShortageTool extends BaseTool {
     }
 
     try {
-      // Fetch all active shortages (limited sample for categories)
+      // Fetch all active shortages to get comprehensive category list
       const result = await this.searchShortages({
         status: 'active',
-        limit: 100
+        limit: 1000
       });
 
       if (result.status === 'error') {
@@ -366,10 +366,10 @@ export class FDAShortageTool extends BaseTool {
     }
 
     try {
-      // Fetch all active shortages (limited sample for manufacturers)
+      // Fetch all active shortages to get comprehensive manufacturer list
       const result = await this.searchShortages({
         status: 'active',
-        limit: 100
+        limit: 1000
       });
 
       if (result.status === 'error') {
