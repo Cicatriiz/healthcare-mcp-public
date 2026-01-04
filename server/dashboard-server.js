@@ -252,6 +252,15 @@ const server = http.createServer(async (req, res) => {
       return writeJson(res, 200, result);
     }
 
+    // Clear cache (for debugging/testing)
+    if (req.method === 'POST' && pathname === '/api/dashboard/cache/clear') {
+      cacheService.clear();
+      return writeJson(res, 200, {
+        status: 'success',
+        message: 'Cache cleared successfully'
+      });
+    }
+
     // API documentation / available endpoints
     if (req.method === 'GET' && pathname === '/api/dashboard') {
       return writeJson(res, 200, {
@@ -315,6 +324,11 @@ const server = http.createServer(async (req, res) => {
             method: 'GET',
             path: '/api/dashboard/usage',
             description: 'Get API usage statistics for this session'
+          },
+          {
+            method: 'POST',
+            path: '/api/dashboard/cache/clear',
+            description: 'Clear all cached data (for debugging)'
           }
         ],
         data_source: 'openFDA Drug Shortages API',
