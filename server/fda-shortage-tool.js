@@ -508,22 +508,23 @@ export class FDAShortageTool extends BaseTool {
     }
 
     try {
-      // Fetch ALL shortages without status filter, then count by normalized status
-      // This ensures accurate counts since we normalize post-fetch
-      const allResult = await this.searchShortages({ status: 'all', limit: 1000 });
+      // Fetch ALL shortages using pagination to get complete dataset
+      const allResult = await this.fetchAllShortages();
 
       if (allResult.status === 'error') {
         return allResult;
       }
 
+      const allShortages = allResult.shortages;
+
       // Count by normalized status
-      const activeCount = allResult.shortages.filter(s => s.status === 'active').length;
-      const resolvedCount = allResult.shortages.filter(s => s.status === 'resolved').length;
+      const activeCount = allShortages.filter(s => s.status === 'active').length;
+      const resolvedCount = allShortages.filter(s => s.status === 'resolved').length;
 
       const stats = {
         total_active: activeCount,
         total_resolved: resolvedCount,
-        total_all: allResult.total_results || 0
+        total_all: allShortages.length
       };
 
       const response = this.formatSuccessResponse(stats);
