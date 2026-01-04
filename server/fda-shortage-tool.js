@@ -183,7 +183,8 @@ export class FDAShortageTool extends BaseTool {
    */
   async searchShortages(params = {}) {
     // Validate and set defaults
-    const limit = Math.min(params.limit || 20, 100);
+    // FDA API maximum is 1000 results per request
+    const limit = Math.min(params.limit || 20, 1000);
     const skip = params.skip || 0;
     const status = params.status || 'all';
 
