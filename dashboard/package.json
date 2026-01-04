@@ -8,5 +8,9 @@
     "dev": "node server-integrated.js"
   },
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "node-cache": "^5.1.2",
+    "node-fetch": "^3.3.2"
+  }
 }
