@@ -533,10 +533,13 @@
                             callbacks: {
                                 afterLabel: function(context) {
                                     const mfg = filtered[context.dataIndex];
+                                    const avgResolution = mfg.avg_resolution_days !== null && mfg.avg_resolution_days !== undefined
+                                        ? `${mfg.avg_resolution_days} days`
+                                        : 'N/A (no resolved shortages)';
                                     return [
                                         `Long-running: ${mfg.long_running_count}`,
                                         `Resolution rate: ${mfg.resolution_rate}%`,
-                                        `Avg resolution: ${mfg.avg_resolution_days} days`
+                                        `Avg resolution: ${avgResolution}`
                                     ];
                                 }
                             }

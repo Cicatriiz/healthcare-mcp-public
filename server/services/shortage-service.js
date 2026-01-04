@@ -811,17 +811,21 @@ export class ShortageService {
         }
       });
 
-      const manufacturerRisk = Object.entries(manufacturerStats).map(([manufacturer, stats]) => ({
-        manufacturer,
-        total_shortages: stats.total,
-        active_shortages: stats.active,
-        resolved_shortages: stats.resolved,
-        long_running_count: stats.long_running,
-        avg_resolution_days: stats.resolved_count_for_avg > 0
-          ? Math.round(stats.total_duration_days / stats.resolved_count_for_avg)
-          : 0,
-        resolution_rate: stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0
-      })).sort((a, b) => b.active_shortages - a.active_shortages);
+      const manufacturerRisk = Object.entries(manufacturerStats)
+        .map(([manufacturer, stats]) => ({
+          manufacturer,
+          total_shortages: stats.total,
+          active_shortages: stats.active,
+          resolved_shortages: stats.resolved,
+          long_running_count: stats.long_running,
+          avg_resolution_days: stats.resolved_count_for_avg > 0
+            ? Math.round(stats.total_duration_days / stats.resolved_count_for_avg)
+            : null,  // null instead of 0 when no data
+          resolution_rate: stats.total > 0 ? Math.round((stats.resolved / stats.total) * 100) : 0,
+          has_resolution_data: stats.resolved_count_for_avg > 0
+        }))
+        .filter(m => m.active_shortages > 0)  // Only show manufacturers with active shortages
+        .sort((a, b) => b.active_shortages - a.active_shortages);
 
       // 6. Year-over-year comparison
       const currentYear = new Date().getFullYear();
