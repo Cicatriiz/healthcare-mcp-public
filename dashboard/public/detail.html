@@ -126,50 +126,14 @@
                 </dl>
             </div>
 
-            <!-- Clinical Enrichment Tabs -->
-            <div id="enrichment-section" class="hidden">
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                    <div class="border-b border-gray-200">
-                        <nav class="flex -mb-px">
-                            <button onclick="switchTab('research')" id="tab-research" class="tab-button active">Research & Evidence</button>
-                            <button onclick="switchTab('guidelines')" id="tab-guidelines" class="tab-button">Guidelines</button>
-                            <button onclick="switchTab('trials')" id="tab-trials" class="tab-button">Clinical Trials</button>
-                            <button onclick="switchTab('alternatives')" id="tab-alternatives" class="tab-button">Alternatives</button>
-                        </nav>
-                    </div>
+            <!-- Alternatives Section -->
+            <div id="alternatives-section" class="hidden">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold mb-4">Alternative Therapies</h3>
+                    <div id="alternatives-list" class="space-y-3"></div>
 
-                    <!-- Research Tab -->
-                    <div id="content-research" class="tab-content p-6">
-                        <h3 class="text-lg font-semibold mb-4">PubMed Articles</h3>
-                        <div id="pubmed-list" class="space-y-3"></div>
-
-                        <h3 class="text-lg font-semibold mt-6 mb-4">medRxiv Preprints</h3>
-                        <div id="medrxiv-list" class="space-y-3"></div>
-                    </div>
-
-                    <!-- Guidelines Tab -->
-                    <div id="content-guidelines" class="tab-content hidden p-6">
-                        <h3 class="text-lg font-semibold mb-4">Health.gov Topics</h3>
-                        <div id="health-list" class="space-y-3"></div>
-
-                        <h3 class="text-lg font-semibold mt-6 mb-4">NCBI Bookshelf Resources</h3>
-                        <div id="bookshelf-list" class="space-y-3"></div>
-                    </div>
-
-                    <!-- Trials Tab -->
-                    <div id="content-trials" class="tab-content hidden p-6">
-                        <h3 class="text-lg font-semibold mb-4">Clinical Trials</h3>
-                        <div id="trials-list" class="space-y-3"></div>
-                    </div>
-
-                    <!-- Alternatives Tab -->
-                    <div id="content-alternatives" class="tab-content hidden p-6">
-                        <h3 class="text-lg font-semibold mb-4">Alternative Therapies</h3>
-                        <div id="alternatives-list" class="space-y-3"></div>
-
-                        <h3 class="text-lg font-semibold mt-6 mb-4">Related ICD-10 Codes</h3>
-                        <div id="icd-list" class="space-y-2"></div>
-                    </div>
+                    <h3 class="text-lg font-semibold mt-6 mb-4">Related ICD-10 Codes</h3>
+                    <div id="icd-list" class="space-y-2"></div>
                 </div>
             </div>
 
@@ -283,25 +247,10 @@
         }
 
         function renderEnrichment(enrichment, status) {
-            const enrichmentSection = document.getElementById('enrichment-section');
+            const alternativesSection = document.getElementById('alternatives-section');
 
-            // Show enrichment section
-            enrichmentSection.classList.remove('hidden');
-
-            // Render PubMed articles
-            renderPubMedArticles(enrichment.pubmed_articles || []);
-
-            // Render medRxiv preprints
-            renderMedRxivPreprints(enrichment.medrxiv_preprints || []);
-
-            // Render Health.gov topics
-            renderHealthTopics(enrichment.health_guidelines || []);
-
-            // Render NCBI Bookshelf
-            renderBookshelfResources(enrichment.bookshelf_resources || []);
-
-            // Render Clinical Trials
-            renderClinicalTrials(enrichment.clinical_trials || []);
+            // Show alternatives section
+            alternativesSection.classList.remove('hidden');
 
             // Render Alternatives
             renderAlternatives(enrichment.alternatives || []);
@@ -423,15 +372,6 @@
             `).join('');
         }
 
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
-            document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-
-            // Show selected tab
-            document.getElementById(`content-${tabName}`).classList.remove('hidden');
-            document.getElementById(`tab-${tabName}`).classList.add('active');
-        }
 
         function showError(message) {
             document.getElementById('error-message').textContent = message;

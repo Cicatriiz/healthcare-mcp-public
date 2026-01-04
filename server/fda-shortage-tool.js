@@ -200,47 +200,15 @@ export class FDAShortageTool extends BaseTool {
     try {
       console.error(`Fetching FDA shortage data with params: ${JSON.stringify(params)}`);
 
-      // CRITICAL FIX: When filtering by status, we must fetch a large dataset
-      // because FDA API doesn't have active/resolved as native fields.
-      // We normalize post-fetch, so fetching only 20 might give us 0 active results.
-      // Solution: Always fetch 1000 (FDA max), filter, then paginate
-      const fetchLimit = 1000; // Always fetch max to ensure we have data to filter
+      // CRITICAL FIX: Fetch ALL shortages using pagination
+      // This ensures we have the complete dataset for filtering and analytics
+      const allResult = await this.fetchAllShortages();
 
-      // Build query parameters
-      const apiParams = {
-        limit: fetchLimit
-      };
-
-      // Don't use skip at API level - we'll paginate after filtering
-      // This ensures we get consistent results when filtering by status
-
-      // Build search query
-      const searchQuery = this.buildSearchQuery(params);
-      if (searchQuery) {
-        apiParams.search = searchQuery;
+      if (allResult.status === 'error') {
+        return allResult;
       }
 
-      // Add sorting if specified
-      if (params.sort) {
-        apiParams.sort = params.sort;
-      } else {
-        // Default sort: most recent first
-        apiParams.sort = 'initial_posting_date:desc';
-      }
-
-      // Add API key if available
-      if (this.apiKey) {
-        apiParams.api_key = this.apiKey;
-      }
-
-      // Build final URL
-      const url = this.buildUrl(this.baseUrl, apiParams);
-
-      // Make the request
-      const data = await this.makeRequest(url);
-
-      // Normalize the shortage data
-      let allShortages = this.normalizeShortageData(data);
+      let allShortages = allResult.shortages;
 
       // Apply status filter post-normalization (since FDA API status values vary)
       let filteredShortages = allShortages;
@@ -264,18 +232,38 @@ export class FDAShortageTool extends BaseTool {
         });
       }
 
+      // Apply therapeutic category filter (client-side)
+      if (params.therapeutic_category) {
+        filteredShortages = filteredShortages.filter(shortage => {
+          return shortage.therapeutic_categories &&
+                 shortage.therapeutic_categories.includes(params.therapeutic_category);
+        });
+      }
+
+      // Apply dosage form filter (client-side)
+      if (params.dosage_form) {
+        filteredShortages = filteredShortages.filter(shortage => {
+          return shortage.dosage_form === params.dosage_form;
+        });
+      }
+
+      // Apply manufacturer filter (client-side)
+      if (params.company_name) {
+        filteredShortages = filteredShortages.filter(shortage => {
+          return shortage.manufacturer &&
+                 shortage.manufacturer.toLowerCase().includes(params.company_name.toLowerCase());
+        });
+      }
+
       // NOW apply pagination on the filtered results
       const totalFiltered = filteredShortages.length;
       const paginatedShortages = filteredShortages.slice(requestedSkip, requestedSkip + requestedLimit);
-
-      // Extract total from FDA API metadata if available
-      const fdaTotal = data?.meta?.results?.total || allShortages.length;
 
       // Format response
       const result = this.formatSuccessResponse({
         shortages: paginatedShortages,
         total_results: totalFiltered, // Total count AFTER filtering
-        total_in_fda: fdaTotal, // Total available in FDA database (before filtering)
+        total_in_fda: allShortages.length, // Total available in FDA database (before filtering)
         limit: requestedLimit,
         skip: requestedSkip,
         query_params: params
@@ -289,6 +277,85 @@ export class FDAShortageTool extends BaseTool {
     } catch (error) {
       console.error(`Error fetching FDA shortage data: ${error.message}`);
       return this.formatErrorResponse(`Error fetching shortage data: ${error.message}`);
+    }
+  }
+
+  /**
+   * Fetch ALL shortages from FDA API using pagination
+   * This fetches multiple pages to get the complete dataset (1500-2000 total)
+   *
+   * @returns {Promise<Object>} All shortages across all pages
+   */
+  async fetchAllShortages() {
+    const cacheKey = this.getCacheKey('fda_all_shortages');
+
+    // Check cache first (cached for 6 hours)
+    const cachedResult = this.cache.get(cacheKey);
+    if (cachedResult) {
+      console.error('Cache hit for all FDA shortages');
+      return cachedResult;
+    }
+
+    try {
+      console.error('Fetching ALL FDA shortage data with pagination...');
+
+      let allShortages = [];
+      let skip = 0;
+      const limit = 1000; // FDA API max per request
+      let hasMore = true;
+
+      // Keep fetching pages until we get all data
+      while (hasMore) {
+        const apiParams = {
+          limit: limit,
+          skip: skip,
+          sort: 'initial_posting_date:desc'
+        };
+
+        if (this.apiKey) {
+          apiParams.api_key = this.apiKey;
+        }
+
+        const url = this.buildUrl(this.baseUrl, apiParams);
+        console.error(`Fetching page: skip=${skip}, limit=${limit}`);
+
+        const data = await this.makeRequest(url);
+        const pageShortages = this.normalizeShortageData(data);
+
+        if (pageShortages.length === 0) {
+          hasMore = false;
+        } else {
+          allShortages = allShortages.concat(pageShortages);
+          skip += limit;
+
+          // Stop if we got fewer results than the limit (means we're on the last page)
+          if (pageShortages.length < limit) {
+            hasMore = false;
+          }
+
+          // Safety check: don't fetch more than 5 pages (5000 results)
+          if (skip >= 5000) {
+            console.error('Reached pagination safety limit (5000 results)');
+            hasMore = false;
+          }
+        }
+      }
+
+      console.error(`Fetched ${allShortages.length} total shortages across all pages`);
+
+      const result = this.formatSuccessResponse({
+        shortages: allShortages,
+        total_results: allShortages.length
+      });
+
+      // Cache for 6 hours
+      this.cache.set(cacheKey, result, 21600);
+
+      return result;
+
+    } catch (error) {
+      console.error(`Error fetching all FDA shortage data: ${error.message}`);
+      return this.formatErrorResponse(`Error fetching all shortage data: ${error.message}`);
     }
   }
 
