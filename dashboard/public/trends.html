@@ -600,7 +600,6 @@
                     renderManufacturerRiskChart(trends.manufacturer_risk);
 
                     // Render tables
-                    renderLongRunningTable(trends.long_running_active);
                     renderLongestTable(trends.longest_resolved);
                     renderCategoryBreakdown(trends.category_breakdown);
                     renderCohortAnalysis(trends.cohort_analysis);
@@ -756,43 +755,6 @@
             });
         }
 
-        function getSeverityColor(days) {
-            if (days >= 5000) return 'border-l-4 border-red-700 bg-red-50';
-            if (days >= 2000) return 'border-l-4 border-orange-600 bg-orange-50';
-            if (days >= 1000) return 'border-l-4 border-yellow-500 bg-yellow-50';
-            if (days >= 365) return 'border-l-4 border-blue-500 bg-blue-50';
-            return '';
-        }
-
-        function renderLongRunningTable(data) {
-            const tbody = document.getElementById('long-running-table');
-
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No long-running shortages (90+ days)</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = data.map(item => {
-                const yearsActive = Math.floor(item.days_since_start / 365);
-                const variantText = item.variant_count > 1 ? ` (${item.variant_count} variants)` : '';
-                const colorClass = getSeverityColor(item.days_since_start);
-
-                return `
-                    <tr class="hover:bg-gray-50 ${colorClass}">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">
-                            ${escapeHtml(item.drug)}${variantText}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.manufacturer)}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.category)}</td>
-                        <td class="px-6 py-4 text-sm font-bold text-red-600">
-                            ${item.days_since_start} days
-                            ${yearsActive > 0 ? `<br><span class="text-xs text-gray-500">(${yearsActive}+ years)</span>` : ''}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-500">${item.started}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
 
         function renderLongestTable(data) {
             const tbody = document.getElementById('longest-table');
@@ -986,9 +948,6 @@
             div.textContent = text;
             return div.innerHTML;
         }
-
-        // Economic Data Loading
-        let productionChart, employmentChart, priceChart, supplyChainChart;
 
         async function loadShortageReasons() {
             const reasonsLoading = document.getElementById('reasons-loading');
