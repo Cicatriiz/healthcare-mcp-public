@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - FDA Drug Shortage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">FDA Drug Shortage Intelligence Dashboard</h1>
+                    <p class="text-sm text-gray-600 mt-1">Analytics & Trends</p>
+                </div>
+                <nav class="flex space-x-4">
+                    <a href="index.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Shortages</a>
+                    <a href="analytics.html" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium">Analytics</a>
+                    <a href="about.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">About</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Summary Stats -->
+        <div id="stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="text-sm font-medium text-gray-600">Active Shortages</div>
+                <div class="mt-2 text-3xl font-bold text-red-600" id="stat-active">-</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="text-sm font-medium text-gray-600">Resolved</div>
+                <div class="mt-2 text-3xl font-bold text-green-600" id="stat-resolved">-</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="text-sm font-medium text-gray-600">Total All Time</div>
+                <div class="mt-2 text-3xl font-bold text-gray-900" id="stat-total">-</div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-600">Loading analytics...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center mb-8">
+            <div class="text-red-600 text-lg font-semibold mb-2">Error Loading Analytics</div>
+            <div id="error-message" class="text-red-800 mb-4"></div>
+            <button onclick="loadAnalytics()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                Retry
+            </button>
+        </div>
+
+        <!-- Charts Container -->
+        <div id="charts-container" class="hidden grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- By Therapeutic Category -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Shortages by Therapeutic Category</h2>
+                <div class="h-80">
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+
+            <!-- By Route -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Shortages by Route of Administration</h2>
+                <div class="h-80">
+                    <canvas id="routeChart"></canvas>
+                </div>
+            </div>
+
+            <!-- By Dosage Form -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Shortages by Dosage Form</h2>
+                <div class="h-80">
+                    <canvas id="dosageFormChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Manufacturers -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Top 10 Manufacturers with Shortages</h2>
+                <div class="h-80">
+                    <canvas id="manufacturerChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Tables -->
+        <div id="tables-container" class="hidden mt-8 space-y-6">
+            <!-- Category Breakdown Table -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">Category Breakdown</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Count</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody id="category-table" class="bg-white divide-y divide-gray-200">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="text-center text-sm text-gray-600">
+                <p>Data Source: <a href="https://open.fda.gov/apis/drug/drugshortages/" target="_blank" class="text-blue-600 hover:underline">openFDA Drug Shortages API</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api-client.js"></script>
+    <script>
+        let charts = {};
+
+        // Load analytics on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAnalytics();
+        });
+
+        async function loadAnalytics() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const chartsContainer = document.getElementById('charts-container');
+            const tablesContainer = document.getElementById('tables-container');
+
+            try {
+                loading.classList.remove('hidden');
+                error.classList.add('hidden');
+                chartsContainer.classList.add('hidden');
+                tablesContainer.classList.add('hidden');
+
+                // Fetch analytics data
+                const result = await api.getAnalytics();
+
+                if (result.status === 'success') {
+                    const analytics = result.analytics;
+
+                    // Update stats
+                    document.getElementById('stat-active').textContent = analytics.summary.total_active || 0;
+                    document.getElementById('stat-resolved').textContent = analytics.summary.total_resolved || 0;
+                    document.getElementById('stat-total').textContent = analytics.summary.total_all || 0;
+
+                    // Render charts
+                    renderCategoryChart(analytics.by_category);
+                    renderRouteChart(analytics.by_route);
+                    renderDosageFormChart(analytics.by_dosage_form);
+                    renderManufacturerChart(analytics.by_manufacturer);
+
+                    // Render tables
+                    renderCategoryTable(analytics.by_category, analytics.summary.total_active);
+
+                    // Show content
+                    chartsContainer.classList.remove('hidden');
+                    tablesContainer.classList.remove('hidden');
+                } else {
+                    throw new Error(result.error_message || 'Failed to load analytics');
+                }
+            } catch (err) {
+                console.error('Error loading analytics:', err);
+                document.getElementById('error-message').textContent = err.message;
+                error.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function renderCategoryChart(data) {
+            const top10 = data.slice(0, 10);
+            const ctx = document.getElementById('categoryChart');
+
+            if (charts.category) charts.category.destroy();
+
+            charts.category = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top10.map(d => d.category),
+                    datasets: [{
+                        label: 'Active Shortages',
+                        data: top10.map(d => d.count),
+                        backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                        borderColor: 'rgba(220, 38, 38, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderRouteChart(data) {
+            const ctx = document.getElementById('routeChart');
+
+            if (charts.route) charts.route.destroy();
+
+            charts.route = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: data.map(d => d.route),
+                    datasets: [{
+                        data: data.map(d => d.count),
+                        backgroundColor: [
+                            'rgba(220, 38, 38, 0.8)',
+                            'rgba(59, 130, 246, 0.8)',
+                            'rgba(16, 185, 129, 0.8)',
+                            'rgba(245, 158, 11, 0.8)',
+                            'rgba(139, 92, 246, 0.8)',
+                            'rgba(236, 72, 153, 0.8)',
+                            'rgba(107, 114, 128, 0.8)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right' }
+                    }
+                }
+            });
+        }
+
+        function renderDosageFormChart(data) {
+            const top10 = data.slice(0, 10);
+            const ctx = document.getElementById('dosageFormChart');
+
+            if (charts.dosageForm) charts.dosageForm.destroy();
+
+            charts.dosageForm = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top10.map(d => d.dosage_form),
+                    datasets: [{
+                        label: 'Count',
+                        data: top10.map(d => d.count),
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderManufacturerChart(data) {
+            const top10 = data.slice(0, 10);
+            const ctx = document.getElementById('manufacturerChart');
+
+            if (charts.manufacturer) charts.manufacturer.destroy();
+
+            charts.manufacturer = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top10.map(d => d.manufacturer),
+                    datasets: [{
+                        label: 'Shortages',
+                        data: top10.map(d => d.count),
+                        backgroundColor: 'rgba(245, 158, 11, 0.8)',
+                        borderColor: 'rgba(245, 158, 11, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        function renderCategoryTable(data, total) {
+            const tbody = document.getElementById('category-table');
+            tbody.innerHTML = data.map(item => {
+                const percentage = ((item.count / total) * 100).toFixed(1);
+                return `
+                    <tr>
+                        <td class="px-6 py-4 text-sm text-gray-900">${item.category}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">${item.count}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${percentage}%</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
