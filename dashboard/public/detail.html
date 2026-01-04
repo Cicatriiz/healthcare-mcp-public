@@ -126,6 +126,38 @@
                 </dl>
             </div>
 
+            <!-- Therapeutic Alternatives (RxNorm) -->
+            <div id="therapeutic-alternatives-section" class="hidden bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">💊 Therapeutic Alternatives</h3>
+                <p class="text-sm text-gray-600 mb-4">Similar drugs in the same therapeutic class (via RxNorm)</p>
+
+                <div id="therapeutic-alternatives-loading" class="flex items-center justify-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span class="ml-3 text-blue-800">Finding alternatives...</span>
+                </div>
+
+                <div id="therapeutic-alternatives-content" class="hidden">
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <span class="text-sm text-gray-600">Therapeutic Class:</span>
+                                <span id="therapeutic-class" class="ml-2 font-semibold text-gray-900"></span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold text-green-600" id="alternatives-available-count">0</div>
+                                <div class="text-xs text-gray-500">Available Alternatives</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="therapeutic-alternatives-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                </div>
+
+                <div id="therapeutic-alternatives-error" class="hidden bg-yellow-50 border border-yellow-200 rounded p-4">
+                    <p class="text-sm text-yellow-800">Could not find therapeutic alternatives for this drug.</p>
+                </div>
+            </div>
+
             <!-- Alternatives Section -->
             <div id="alternatives-section" class="hidden">
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
@@ -178,6 +210,9 @@
                     renderShortageDetail(result.shortage);
                     content.classList.remove('hidden');
 
+                    // Load therapeutic alternatives
+                    loadTherapeuticAlternatives(ndc);
+
                     // Load enrichment data if available
                     if (result.shortage.enrichment) {
                         renderEnrichment(result.shortage.enrichment, result.shortage.enrichment_status);
@@ -191,6 +226,64 @@
             } finally {
                 loading.classList.add('hidden');
             }
+        }
+
+        async function loadTherapeuticAlternatives(ndc) {
+            const section = document.getElementById('therapeutic-alternatives-section');
+            const loading = document.getElementById('therapeutic-alternatives-loading');
+            const content = document.getElementById('therapeutic-alternatives-content');
+            const errorEl = document.getElementById('therapeutic-alternatives-error');
+
+            try {
+                section.classList.remove('hidden');
+                loading.classList.remove('hidden');
+                content.classList.add('hidden');
+                errorEl.classList.add('hidden');
+
+                const result = await api.getTherapeuticAlternatives(ndc);
+
+                if (result.status === 'success' && result.alternatives) {
+                    renderTherapeuticAlternatives(result);
+                    loading.classList.add('hidden');
+                    content.classList.remove('hidden');
+                } else {
+                    loading.classList.add('hidden');
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Error loading therapeutic alternatives:', err);
+                loading.classList.add('hidden');
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function renderTherapeuticAlternatives(data) {
+            // Set therapeutic class
+            const className = data.primary_class?.className || 'Unknown';
+            document.getElementById('therapeutic-class').textContent = className;
+
+            // Set available count
+            document.getElementById('alternatives-available-count').textContent = data.available_count || 0;
+
+            // Render alternatives list
+            const list = document.getElementById('therapeutic-alternatives-list');
+
+            if (!data.available_alternatives || data.available_alternatives.length === 0) {
+                list.innerHTML = '<p class="col-span-2 text-gray-500 text-center py-4">All alternatives in this therapeutic class are also in shortage.</p>';
+                return;
+            }
+
+            list.innerHTML = data.available_alternatives.map(alt => `
+                <div class="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900">${escapeHtml(alt.name)}</h4>
+                            <p class="text-xs text-gray-500 mt-1">RxCUI: ${alt.rxcui}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Available</span>
+                    </div>
+                </div>
+            `).join('');
         }
 
         function renderShortageDetail(shortage) {

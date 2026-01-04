@@ -5,7 +5,7 @@
  * analytics, enrichment, and aggregation across multiple MCP tools.
  */
 export class ShortageService {
-  constructor(mcpTools, cacheService, historyService = null) {
+  constructor(mcpTools, cacheService, historyService = null, rxnormService = null) {
     this.fdaShortage = mcpTools.fdaShortage;
     this.fdaDrug = mcpTools.fdaDrug;
     this.pubmed = mcpTools.pubmed;
@@ -16,6 +16,7 @@ export class ShortageService {
     this.ncbiBookshelf = mcpTools.ncbiBookshelf;
     this.cache = cacheService;
     this.history = historyService;
+    this.rxnorm = rxnormService;
 
     // US State coordinates for geocoding
     this.US_STATE_COORDS = {
@@ -1261,6 +1262,123 @@ export class ShortageService {
     );
 
     return enriched;
+  }
+
+  /**
+   * Get therapeutic alternatives for a shortage drug
+   * Uses RxNorm to find drugs in the same therapeutic class
+   */
+  async getTherapeuticAlternatives(shortage) {
+    if (!this.rxnorm) {
+      return {
+        status: 'error',
+        error_message: 'RxNorm service not available'
+      };
+    }
+
+    try {
+      const drugName = shortage.generic_name || shortage.brand_name;
+
+      if (!drugName) {
+        return {
+          status: 'error',
+          error_message: 'No drug name available'
+        };
+      }
+
+      // Step 1: Normalize the drug name to get RxCUI
+      const normalized = await this.rxnorm.normalizeDrugName(drugName);
+
+      if (normalized.status !== 'success') {
+        return {
+          status: 'not_found',
+          drug_name: drugName,
+          message: 'Could not normalize drug name',
+          details: normalized
+        };
+      }
+
+      // Step 2: Get therapeutic alternatives
+      const alternatives = await this.rxnorm.getTherapeuticAlternatives(normalized.rxcui);
+
+      if (alternatives.status !== 'success') {
+        return {
+          status: 'not_found',
+          drug_name: drugName,
+          rxcui: normalized.rxcui,
+          message: 'Could not find therapeutic alternatives',
+          details: alternatives
+        };
+      }
+
+      // Step 3: Check which alternatives are also in shortage
+      const allShortages = await this.fdaShortage.fetchAllShortages();
+      const shortageNames = new Set();
+
+      if (allShortages.status === 'success' && allShortages.shortages) {
+        allShortages.shortages.forEach(s => {
+          if (s.generic_name) shortageNames.add(s.generic_name.toLowerCase());
+          if (s.brand_name) shortageNames.add(s.brand_name.toLowerCase());
+        });
+      }
+
+      // Mark alternatives that are also in shortage
+      const enrichedAlternatives = alternatives.alternatives.map(alt => ({
+        ...alt,
+        also_in_shortage: shortageNames.has(alt.name.toLowerCase())
+      }));
+
+      return {
+        status: 'success',
+        shortage_drug: {
+          ndc: shortage.ndc,
+          generic_name: shortage.generic_name,
+          brand_name: shortage.brand_name,
+          rxcui: normalized.rxcui,
+          normalized_name: normalized.name
+        },
+        therapeutic_classes: alternatives.therapeutic_classes,
+        primary_class: alternatives.primary_class,
+        alternatives: enrichedAlternatives,
+        available_alternatives: enrichedAlternatives.filter(a => !a.also_in_shortage),
+        total_alternatives: alternatives.total_alternatives,
+        available_count: enrichedAlternatives.filter(a => !a.also_in_shortage).length
+      };
+
+    } catch (error) {
+      return {
+        status: 'error',
+        error_message: `Failed to get therapeutic alternatives: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Enrich shortage with therapeutic alternatives
+   */
+  async enrichWithTherapeuticAlternatives(shortage) {
+    if (!this.rxnorm) {
+      return shortage; // No RxNorm service available
+    }
+
+    try {
+      const alternatives = await this.getTherapeuticAlternatives(shortage);
+
+      if (alternatives.status === 'success') {
+        shortage.therapeutic_alternatives = {
+          total: alternatives.total_alternatives,
+          available: alternatives.available_count,
+          alternatives: alternatives.available_alternatives.slice(0, 10), // Limit to 10
+          therapeutic_class: alternatives.primary_class?.className
+        };
+      }
+
+      return shortage;
+
+    } catch (error) {
+      console.error('[ShortageService] Error enriching with therapeutic alternatives:', error);
+      return shortage;
+    }
   }
 
   /**

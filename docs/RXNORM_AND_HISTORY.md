@@ -83,6 +83,52 @@ Response:
 }
 ```
 
+### Integrated Dashboard Features
+
+#### Automatic Therapeutic Alternatives
+
+The shortage detail page now automatically shows therapeutic alternatives for each drug:
+
+- **Displays alternatives in the same therapeutic class**
+- **Filters out drugs that are also in shortage** (shows only available alternatives)
+- **Shows therapeutic class name** (e.g., "amoxicillin" from ATC classification)
+- **Counts available alternatives** prominently
+
+When viewing any shortage detail, you'll see:
+- A "Therapeutic Alternatives" section with a prominent count of available alternatives
+- List of similar drugs that could potentially substitute
+- Visual indicators showing which alternatives are available vs. also in shortage
+
+#### API Endpoint
+```bash
+GET /api/dashboard/alternatives?ndc=0002-1234-01
+
+Response:
+{
+  "status": "success",
+  "shortage_drug": {
+    "ndc": "0002-1234-01",
+    "generic_name": "Amoxicillin",
+    "rxcui": "723"
+  },
+  "therapeutic_classes": [...],
+  "primary_class": {
+    "classId": "J01CA04",
+    "className": "amoxicillin"
+  },
+  "alternatives": [
+    {
+      "rxcui": "3640",
+      "name": "Ampicillin",
+      "also_in_shortage": false
+    },
+    ...
+  ],
+  "available_alternatives": [...],
+  "available_count": 12
+}
+```
+
 ### Use Cases
 
 #### Hospital Formulary Integration

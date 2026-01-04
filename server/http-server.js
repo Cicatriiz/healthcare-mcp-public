@@ -47,7 +47,7 @@ const dicomTool = new DicomTool(cacheService);
 const rxnormService = new RxNormService(cacheService);
 const historyService = new HistoryService();
 
-// Initialize Shortage Service with all tools and history
+// Initialize Shortage Service with all tools, history, and RxNorm
 const shortageService = new ShortageService({
   fdaShortage: fdaShortageTool,
   fdaDrug: fdaTool,
@@ -57,7 +57,7 @@ const shortageService = new ShortageService({
   medicalTerminology: medicalTerminologyTool,
   medrxiv: medrxivTool,
   ncbiBookshelf: ncbiBookshelfTool
-}, cacheService, historyService);
+}, cacheService, historyService, rxnormService);
 
 const DASHBOARD_PUBLIC = path.join(__dirname, '..', 'dashboard', 'public');
 const MIME_TYPES = {
@@ -377,6 +377,24 @@ const server = http.createServer(async (req, res) => {
       if (dashboardPath === '/history/snapshot') {
         // Trigger a manual snapshot
         const result = await historyService.takeSnapshot(fdaShortageTool);
+        return writeJson(res, 200, result);
+      }
+
+      // Therapeutic alternatives endpoint
+      if (dashboardPath === '/alternatives') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get shortage detail first
+        const shortageResult = await shortageService.getShortageDetail(ndc);
+        if (shortageResult.status === 'error') {
+          return writeJson(res, 404, shortageResult);
+        }
+
+        // Get therapeutic alternatives
+        const result = await shortageService.getTherapeuticAlternatives(shortageResult.shortage);
         return writeJson(res, 200, result);
       }
     }

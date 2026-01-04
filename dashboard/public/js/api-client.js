@@ -145,6 +145,13 @@ class DashboardAPI {
     async getShortageReasons() {
         return this.request('/shortage-reasons');
     }
+
+    /**
+     * Get therapeutic alternatives for a shortage drug
+     */
+    async getTherapeuticAlternatives(ndc) {
+        return this.request('/alternatives', { ndc });
+    }
 }
 
 // Create global API instance
