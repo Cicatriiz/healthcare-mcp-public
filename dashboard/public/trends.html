@@ -80,21 +80,27 @@
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Monthly Shortage Trends</h2>
                 <p class="text-sm text-gray-600 mb-4">Showing last 24 months of shortage activity</p>
-                <canvas id="timeline-chart" height="80"></canvas>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="timeline-chart"></canvas>
+                </div>
             </div>
 
             <!-- Duration by Category -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">Average Duration by Therapeutic Category (Top 10)</h2>
                 <p class="text-sm text-gray-600 mb-4">Hover over bars to see shortage counts</p>
-                <canvas id="duration-chart" height="100"></canvas>
+                <div class="relative" style="height: 400px;">
+                    <canvas id="duration-chart"></canvas>
+                </div>
             </div>
 
             <!-- Manufacturer Risk Analysis -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
                 <h2 class="text-lg font-semibold text-gray-900 mb-4">🏭 Manufacturer Risk Analysis</h2>
                 <p class="text-sm text-gray-600 mb-4">Top 10 manufacturers by active shortage count</p>
-                <canvas id="manufacturer-risk-chart" height="100"></canvas>
+                <div class="relative" style="height: 400px;">
+                    <canvas id="manufacturer-risk-chart"></canvas>
+                </div>
             </div>
 
             <!-- Year-over-Year & Resolution Velocity -->
@@ -270,7 +276,9 @@
                                 <div class="text-3xl font-bold" id="production-value">-</div>
                                 <div class="text-sm text-gray-600 mt-1" id="production-trend">-</div>
                             </div>
-                            <canvas id="production-chart" class="mt-4" height="150"></canvas>
+                            <div class="mt-4 relative" style="height: 200px;">
+                                <canvas id="production-chart"></canvas>
+                            </div>
                         </div>
 
                         <!-- Manufacturing Employment -->
@@ -280,7 +288,9 @@
                                 <div class="text-3xl font-bold" id="employment-value">-</div>
                                 <div class="text-sm text-gray-600 mt-1" id="employment-trend">-</div>
                             </div>
-                            <canvas id="employment-chart" class="mt-4" height="150"></canvas>
+                            <div class="mt-4 relative" style="height: 200px;">
+                                <canvas id="employment-chart"></canvas>
+                            </div>
                         </div>
                     </div>
 
@@ -293,7 +303,9 @@
                                 <div class="text-3xl font-bold" id="price-value">-</div>
                                 <div class="text-sm text-gray-600 mt-1" id="price-trend">-</div>
                             </div>
-                            <canvas id="price-chart" class="mt-4" height="150"></canvas>
+                            <div class="mt-4 relative" style="height: 200px;">
+                                <canvas id="price-chart"></canvas>
+                            </div>
                         </div>
 
                         <!-- Supply Chain Pressure -->
@@ -303,7 +315,9 @@
                                 <div class="text-3xl font-bold" id="supply-chain-value">-</div>
                                 <div class="text-sm text-gray-600 mt-1" id="supply-chain-trend">-</div>
                             </div>
-                            <canvas id="supply-chain-chart" class="mt-4" height="150"></canvas>
+                            <div class="mt-4 relative" style="height: 200px;">
+                                <canvas id="supply-chain-chart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -416,7 +430,7 @@
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             position: 'top'
@@ -484,7 +498,7 @@
                 options: {
                     indexAxis: 'y',
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             display: false
@@ -606,7 +620,7 @@
                 options: {
                     indexAxis: 'y',
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             display: false
@@ -640,11 +654,12 @@
         function renderYoYComparison(yoy) {
             const content = document.getElementById('yoy-content');
 
-            const activeChange = yoy.active_change_pct;
+            // Handle edge cases for percentage calculations
+            const activeChange = isFinite(yoy.active_change_pct) ? Math.round(yoy.active_change_pct) : 0;
             const activeIcon = activeChange > 0 ? '📈 ↑' : (activeChange < 0 ? '📉 ↓' : '➡️');
             const activeColor = activeChange > 0 ? 'text-red-600' : (activeChange < 0 ? 'text-green-600' : 'text-gray-600');
 
-            const resolvedChange = yoy.resolved_change_pct;
+            const resolvedChange = isFinite(yoy.resolved_change_pct) ? Math.round(yoy.resolved_change_pct) : 0;
             const resolvedIcon = resolvedChange > 0 ? '📈 ↑' : (resolvedChange < 0 ? '📉 ↓' : '➡️');
             const resolvedColor = resolvedChange > 0 ? 'text-green-600' : (resolvedChange < 0 ? 'text-red-600' : 'text-gray-600');
 
