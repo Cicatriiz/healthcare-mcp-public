@@ -243,10 +243,14 @@ export class FDAShortageTool extends BaseTool {
         shortages = shortages.filter(s => s.status === params.status);
       }
 
+      // Extract total from FDA API metadata if available
+      const fdaTotal = data?.meta?.results?.total || shortages.length;
+
       // Format response
       const result = this.formatSuccessResponse({
         shortages: shortages,
-        total_results: shortages.length, // Use actual filtered count
+        total_results: shortages.length, // Count of results after filtering
+        total_in_fda: fdaTotal, // Total available in FDA database
         limit: limit,
         skip: skip,
         query_params: params
@@ -412,20 +416,22 @@ export class FDAShortageTool extends BaseTool {
     }
 
     try {
-      // Fetch active and resolved shortages
-      const [activeResult, resolvedResult] = await Promise.all([
-        this.searchShortages({ status: 'active', limit: 100 }),
-        this.searchShortages({ status: 'resolved', limit: 100 })
-      ]);
+      // Fetch ALL shortages without status filter, then count by normalized status
+      // This ensures accurate counts since we normalize post-fetch
+      const allResult = await this.searchShortages({ status: 'all', limit: 1000 });
 
-      if (activeResult.status === 'error') {
-        return activeResult;
+      if (allResult.status === 'error') {
+        return allResult;
       }
 
+      // Count by normalized status
+      const activeCount = allResult.shortages.filter(s => s.status === 'active').length;
+      const resolvedCount = allResult.shortages.filter(s => s.status === 'resolved').length;
+
       const stats = {
-        total_active: activeResult.total_results || 0,
-        total_resolved: resolvedResult.total_results || 0,
-        total_all: (activeResult.total_results || 0) + (resolvedResult.total_results || 0)
+        total_active: activeCount,
+        total_resolved: resolvedCount,
+        total_all: allResult.total_results || 0
       };
 
       const response = this.formatSuccessResponse(stats);
