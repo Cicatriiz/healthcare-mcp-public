@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: fda-shortage-dashboard
+    env: node
+    buildCommand: npm install
+    startCommand: npm run server:http
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: CACHE_TTL
+        value: 86400
