@@ -152,6 +152,35 @@ class DashboardAPI {
     async getTherapeuticAlternatives(ndc) {
         return this.request('/alternatives', { ndc });
     }
+
+    /**
+     * Get DailyMed information (images and labels) for a shortage drug
+     */
+    async getDailyMedInfo(ndc) {
+        return this.request('/dailymed', { ndc });
+    }
+
+    /**
+     * Get adverse events summary for a shortage drug
+     */
+    async getAdverseEvents(ndc) {
+        return this.request('/adverse-events', { ndc });
+    }
+
+    /**
+     * Get recalls information for a shortage drug
+     */
+    async getRecalls(ndc) {
+        return this.request('/recalls', { ndc });
+    }
+
+    /**
+     * Get comprehensive enriched data for a shortage drug
+     * Includes DailyMed, adverse events, recalls, and therapeutic alternatives
+     */
+    async getEnrichedData(ndc) {
+        return this.request('/enriched', { ndc });
+    }
 }
 
 // Create global API instance

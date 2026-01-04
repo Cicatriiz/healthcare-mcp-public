@@ -5,7 +5,7 @@
  * analytics, enrichment, and aggregation across multiple MCP tools.
  */
 export class ShortageService {
-  constructor(mcpTools, cacheService, historyService = null, rxnormService = null) {
+  constructor(mcpTools, cacheService, historyService = null, rxnormService = null, dailymedService = null, adverseEventsService = null, enforcementService = null) {
     this.fdaShortage = mcpTools.fdaShortage;
     this.fdaDrug = mcpTools.fdaDrug;
     this.pubmed = mcpTools.pubmed;
@@ -17,6 +17,9 @@ export class ShortageService {
     this.cache = cacheService;
     this.history = historyService;
     this.rxnorm = rxnormService;
+    this.dailymed = dailymedService;
+    this.adverseEvents = adverseEventsService;
+    this.enforcement = enforcementService;
 
     // US State coordinates for geocoding
     this.US_STATE_COORDS = {
@@ -1459,6 +1462,135 @@ export class ShortageService {
       return {
         status: 'error',
         error_message: `Error fetching enriched shortage detail: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get DailyMed information for a shortage (images and label)
+   *
+   * @param {Object} shortage - Shortage object with NDC
+   * @returns {Promise<Object>} DailyMed data with images and label info
+   */
+  async getDailyMedInfo(shortage) {
+    if (!this.dailymed) {
+      return { status: 'not_available', message: 'DailyMed service not configured' };
+    }
+
+    try {
+      const ndc = shortage.ndc;
+      if (!ndc) {
+        return { status: 'error', message: 'No NDC available for DailyMed lookup' };
+      }
+
+      const result = await this.dailymed.getDrugInfo(ndc);
+      return result;
+    } catch (error) {
+      console.error('[ShortageService] Error fetching DailyMed info:', error);
+      return {
+        status: 'error',
+        error_message: `Failed to fetch DailyMed info: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get adverse events summary for a shortage drug
+   *
+   * @param {Object} shortage - Shortage object with drug name
+   * @returns {Promise<Object>} Adverse events and safety data
+   */
+  async getAdverseEventsSummary(shortage) {
+    if (!this.adverseEvents) {
+      return { status: 'not_available', message: 'Adverse Events service not configured' };
+    }
+
+    try {
+      const drugName = shortage.generic_name || shortage.brand_name;
+      if (!drugName) {
+        return { status: 'error', message: 'No drug name available for adverse events lookup' };
+      }
+
+      const result = await this.adverseEvents.getSafetySummary(drugName);
+      return result;
+    } catch (error) {
+      console.error('[ShortageService] Error fetching adverse events:', error);
+      return {
+        status: 'error',
+        error_message: `Failed to fetch adverse events: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get recall information for a shortage drug
+   *
+   * @param {Object} shortage - Shortage object with drug name
+   * @returns {Promise<Object>} Recall data and shortage correlation
+   */
+  async getRecallsSummary(shortage) {
+    if (!this.enforcement) {
+      return { status: 'not_available', message: 'Enforcement service not configured' };
+    }
+
+    try {
+      const drugName = shortage.generic_name || shortage.brand_name;
+      if (!drugName) {
+        return { status: 'error', message: 'No drug name available for recalls lookup' };
+      }
+
+      const result = await this.enforcement.getRecallSummary(drugName);
+      return result;
+    } catch (error) {
+      console.error('[ShortageService] Error fetching recalls:', error);
+      return {
+        status: 'error',
+        error_message: `Failed to fetch recalls: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Get comprehensive enriched shortage data including all new sources
+   * (DailyMed, Adverse Events, Recalls, Therapeutic Alternatives)
+   *
+   * @param {string} ndc - National Drug Code
+   * @returns {Promise<Object>} Fully enriched shortage data
+   */
+  async getComprehensiveShortageData(ndc) {
+    try {
+      // Get basic shortage detail
+      const shortageResult = await this.getShortageDetail(ndc);
+
+      if (shortageResult.status === 'error') {
+        return shortageResult;
+      }
+
+      const shortage = shortageResult.shortage;
+
+      // Enrich with all available data sources in parallel
+      const [dailymedInfo, adverseEvents, recalls, therapeuticAlts] = await Promise.all([
+        this.getDailyMedInfo(shortage),
+        this.getAdverseEventsSummary(shortage),
+        this.getRecallsSummary(shortage),
+        this.rxnorm ? this.getTherapeuticAlternatives(shortage) : Promise.resolve({ status: 'not_available' })
+      ]);
+
+      return {
+        status: 'success',
+        shortage: shortage,
+        enrichment: {
+          dailymed: dailymedInfo.status === 'success' ? dailymedInfo : null,
+          safety: adverseEvents.status === 'success' ? adverseEvents : null,
+          recalls: recalls.status === 'success' ? recalls : null,
+          therapeutic_alternatives: therapeuticAlts.status === 'success' ? therapeuticAlts : null
+        }
+      };
+    } catch (error) {
+      console.error('[ShortageService] Error fetching comprehensive shortage data:', error);
+      return {
+        status: 'error',
+        error_message: `Failed to fetch comprehensive data: ${error.message}`
       };
     }
   }

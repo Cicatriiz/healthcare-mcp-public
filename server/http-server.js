@@ -19,6 +19,9 @@ import { UsageService } from './usage-service.js';
 import { ShortageService } from './services/shortage-service.js';
 import { RxNormService } from './rxnorm-service.js';
 import { HistoryService } from './services/history-service.js';
+import { DailyMedService } from './services/dailymed-service.js';
+import { FDAAdverseEventsTool } from './tools/fda-adverse-events-tool.js';
+import { FDAEnforcementTool } from './tools/fda-enforcement-tool.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -47,7 +50,12 @@ const dicomTool = new DicomTool(cacheService);
 const rxnormService = new RxNormService(cacheService);
 const historyService = new HistoryService();
 
-// Initialize Shortage Service with all tools, history, and RxNorm
+// Initialize DailyMed, Adverse Events, and Enforcement services
+const dailymedService = new DailyMedService(cacheService);
+const adverseEventsService = new FDAAdverseEventsTool(cacheService);
+const enforcementService = new FDAEnforcementTool(cacheService);
+
+// Initialize Shortage Service with all tools and services
 const shortageService = new ShortageService({
   fdaShortage: fdaShortageTool,
   fdaDrug: fdaTool,
@@ -57,7 +65,7 @@ const shortageService = new ShortageService({
   medicalTerminology: medicalTerminologyTool,
   medrxiv: medrxivTool,
   ncbiBookshelf: ncbiBookshelfTool
-}, cacheService, historyService, rxnormService);
+}, cacheService, historyService, rxnormService, dailymedService, adverseEventsService, enforcementService);
 
 const DASHBOARD_PUBLIC = path.join(__dirname, '..', 'dashboard', 'public');
 const MIME_TYPES = {
@@ -395,6 +403,72 @@ const server = http.createServer(async (req, res) => {
 
         // Get therapeutic alternatives
         const result = await shortageService.getTherapeuticAlternatives(shortageResult.shortage);
+        return writeJson(res, 200, result);
+      }
+
+      // DailyMed endpoint - drug images and labels
+      if (dashboardPath === '/dailymed') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get shortage detail first
+        const shortageResult = await shortageService.getShortageDetail(ndc);
+        if (shortageResult.status === 'error') {
+          return writeJson(res, 404, shortageResult);
+        }
+
+        // Get DailyMed info
+        const result = await shortageService.getDailyMedInfo(shortageResult.shortage);
+        return writeJson(res, 200, result);
+      }
+
+      // Adverse events endpoint - safety signals
+      if (dashboardPath === '/adverse-events') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get shortage detail first
+        const shortageResult = await shortageService.getShortageDetail(ndc);
+        if (shortageResult.status === 'error') {
+          return writeJson(res, 404, shortageResult);
+        }
+
+        // Get adverse events summary
+        const result = await shortageService.getAdverseEventsSummary(shortageResult.shortage);
+        return writeJson(res, 200, result);
+      }
+
+      // Recalls endpoint - enforcement data
+      if (dashboardPath === '/recalls') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get shortage detail first
+        const shortageResult = await shortageService.getShortageDetail(ndc);
+        if (shortageResult.status === 'error') {
+          return writeJson(res, 404, shortageResult);
+        }
+
+        // Get recalls summary
+        const result = await shortageService.getRecallsSummary(shortageResult.shortage);
+        return writeJson(res, 200, result);
+      }
+
+      // Comprehensive enriched data endpoint - all new sources
+      if (dashboardPath === '/enriched') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get comprehensive enriched data
+        const result = await shortageService.getComprehensiveShortageData(ndc);
         return writeJson(res, 200, result);
       }
     }
