@@ -123,15 +123,15 @@ export class FDAShortageTool extends BaseTool {
 
   /**
    * Build search query from parameters
+   * NOTE: We don't include params.query here because we do client-side filtering
+   * This is more reliable than trying to match FDA API's complex search syntax
    */
   buildSearchQuery(params) {
     const conditions = [];
 
-    // Search query (search across multiple fields)
-    if (params.query) {
-      const query = params.query;
-      conditions.push(`(generic_name:"${query}" OR proprietary_name:"${query}" OR package_ndc:"${query}")`);
-    }
+    // Search query - SKIP IT HERE, we'll filter client-side after fetching
+    // The FDA API search syntax is complex and unreliable for partial matches
+    // Since we fetch 1000 results anyway, client-side filtering is better
 
     // Status filter
     // Note: FDA API doesn't have a simple active/resolved field
@@ -246,6 +246,22 @@ export class FDAShortageTool extends BaseTool {
       let filteredShortages = allShortages;
       if (params.status && params.status !== 'all') {
         filteredShortages = allShortages.filter(s => s.status === params.status);
+      }
+
+      // Apply search query filter (client-side)
+      if (params.query && params.query.trim()) {
+        const searchTerm = params.query.trim().toLowerCase();
+        filteredShortages = filteredShortages.filter(shortage => {
+          const genericName = (shortage.generic_name || '').toLowerCase();
+          const brandName = (shortage.brand_name || '').toLowerCase();
+          const ndc = (shortage.ndc || '').toLowerCase();
+          const manufacturer = (shortage.manufacturer || '').toLowerCase();
+
+          return genericName.includes(searchTerm) ||
+                 brandName.includes(searchTerm) ||
+                 ndc.includes(searchTerm) ||
+                 manufacturer.includes(searchTerm);
+        });
       }
 
       // NOW apply pagination on the filtered results
