@@ -240,6 +240,14 @@ const server = http.createServer(async (req, res) => {
       return writeJson(res, 200, result);
     }
 
+    // Get shortage reasons analysis
+    if (req.method === 'GET' && pathname === '/api/dashboard/shortage-reasons') {
+      usageService.recordUsage(sessionId, 'dashboard_shortage_reasons');
+
+      const result = await shortageService.getShortageReasons();
+      return writeJson(res, 200, result);
+    }
+
     // Get economic indicators (FRED data)
     if (req.method === 'GET' && pathname === '/api/dashboard/economic-indicators') {
       usageService.recordUsage(sessionId, 'dashboard_economic_indicators');
@@ -500,6 +508,11 @@ const server = http.createServer(async (req, res) => {
             method: 'GET',
             path: '/api/dashboard/trends',
             description: 'Get temporal trends and comprehensive analytics'
+          },
+          {
+            method: 'GET',
+            path: '/api/dashboard/shortage-reasons',
+            description: 'Get shortage root cause analysis - categorizes reasons into manufacturing, demand, regulatory, etc.'
           },
           {
             method: 'GET',

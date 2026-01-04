@@ -1014,6 +1014,206 @@ export class ShortageService {
       };
     }
   }
+
+  /**
+   * Analyze shortage reasons across all active shortages
+   * Categorizes and aggregates root causes
+   */
+  async getShortageReasons() {
+    const cacheKey = this.cache.getCacheKey('shortage_reasons_analysis');
+
+    const cachedResult = this.cache.get(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+
+    try {
+      // Fetch ALL shortages
+      const result = await this.fdaShortage.fetchAllShortages();
+
+      if (result.status === 'error') {
+        return result;
+      }
+
+      const allShortages = result.shortages;
+      const activeShortages = allShortages.filter(s => s.status === 'active');
+
+      // Categorize shortage reasons
+      const reasonCategories = {
+        manufacturing: {
+          name: 'Manufacturing Issues',
+          keywords: ['manufacturing', 'production', 'delay', 'capacity', 'facility', 'plant', 'quality', 'contamination', 'equipment'],
+          shortages: [],
+          count: 0,
+          examples: []
+        },
+        demand: {
+          name: 'Increased Demand',
+          keywords: ['demand', 'increase', 'usage', 'consumption', 'utilization'],
+          shortages: [],
+          count: 0,
+          examples: []
+        },
+        raw_materials: {
+          name: 'Raw Material Shortage',
+          keywords: ['material', 'api', 'ingredient', 'component', 'supply'],
+          shortages: [],
+          count: 0,
+          examples: []
+        },
+        regulatory: {
+          name: 'Regulatory/Quality Issues',
+          keywords: ['fda', 'regulatory', 'inspection', 'warning letter', 'compliance', 'recall', 'quality'],
+          shortages: [],
+          count: 0,
+          examples: []
+        },
+        discontinuation: {
+          name: 'Product Discontinuation',
+          keywords: ['discontinu', 'ceased', 'stopped', 'ended'],
+          shortages: [],
+          count: 0,
+          examples: []
+        },
+        business: {
+          name: 'Business Decision',
+          keywords: ['business decision', 'commercial', 'market', 'financial'],
+          shortages: [],
+          count: 0,
+          examples: []
+        },
+        unknown: {
+          name: 'Unknown/Not Specified',
+          keywords: [],
+          shortages: [],
+          count: 0,
+          examples: []
+        }
+      };
+
+      // Categorize each active shortage
+      activeShortages.forEach(shortage => {
+        const reason = (shortage.shortage_reason || '').toLowerCase();
+
+        if (!reason || reason.trim() === '') {
+          reasonCategories.unknown.shortages.push(shortage);
+          reasonCategories.unknown.count++;
+          return;
+        }
+
+        let categorized = false;
+
+        // Check each category for keyword matches
+        for (const [key, category] of Object.entries(reasonCategories)) {
+          if (key === 'unknown') continue;
+
+          const matched = category.keywords.some(keyword => reason.includes(keyword));
+
+          if (matched) {
+            category.shortages.push(shortage);
+            category.count++;
+
+            // Store first 3 examples
+            if (category.examples.length < 3) {
+              category.examples.push({
+                drug: shortage.generic_name,
+                reason: shortage.shortage_reason
+              });
+            }
+
+            categorized = true;
+            break; // Only categorize into first match
+          }
+        }
+
+        if (!categorized) {
+          reasonCategories.unknown.shortages.push(shortage);
+          reasonCategories.unknown.count++;
+          if (reasonCategories.unknown.examples.length < 3) {
+            reasonCategories.unknown.examples.push({
+              drug: shortage.generic_name,
+              reason: shortage.shortage_reason
+            });
+          }
+        }
+      });
+
+      // Build summary
+      const summary = Object.entries(reasonCategories)
+        .map(([key, category]) => ({
+          category: category.name,
+          count: category.count,
+          percentage: ((category.count / activeShortages.length) * 100).toFixed(1),
+          examples: category.examples
+        }))
+        .filter(c => c.count > 0)
+        .sort((a, b) => b.count - a.count);
+
+      const response = {
+        status: 'success',
+        reasons: {
+          summary,
+          total_active_shortages: activeShortages.length,
+          categorized: activeShortages.length - reasonCategories.unknown.count,
+          uncategorized: reasonCategories.unknown.count,
+          top_reason: summary[0],
+          insights: this.generateReasonInsights(summary, activeShortages.length)
+        }
+      };
+
+      this.cache.set(cacheKey, response, 3600); // 1 hour cache
+
+      return response;
+
+    } catch (error) {
+      return {
+        status: 'error',
+        error_message: `Error analyzing shortage reasons: ${error.message}`
+      };
+    }
+  }
+
+  /**
+   * Generate insights from shortage reasons analysis
+   */
+  generateReasonInsights(summary, totalShortages) {
+    const insights = [];
+
+    if (summary.length === 0) {
+      return ['No shortage reason data available'];
+    }
+
+    const topReason = summary[0];
+
+    // Top reason insight
+    insights.push(`${topReason.category} is the leading cause of active shortages (${topReason.count} drugs, ${topReason.percentage}%)`);
+
+    // Manufacturing issues
+    const manufacturing = summary.find(s => s.category.includes('Manufacturing'));
+    if (manufacturing && parseFloat(manufacturing.percentage) > 40) {
+      insights.push(`Critical: Over 40% of shortages stem from manufacturing problems - indicates systemic production capacity issues`);
+    }
+
+    // Regulatory issues
+    const regulatory = summary.find(s => s.category.includes('Regulatory'));
+    if (regulatory && parseFloat(regulatory.percentage) > 20) {
+      insights.push(`Significant regulatory/quality issues detected (${regulatory.percentage}%) - FDA enforcement may be factor`);
+    }
+
+    // Demand spikes
+    const demand = summary.find(s => s.category.includes('Demand'));
+    if (demand && parseFloat(demand.percentage) > 15) {
+      insights.push(`Demand surges account for ${demand.percentage}% of shortages - may indicate treatment pattern changes or public health events`);
+    }
+
+    // Raw materials
+    const rawMaterials = summary.find(s => s.category.includes('Raw Material'));
+    if (rawMaterials && rawMaterials.count > 0) {
+      insights.push(`${rawMaterials.count} shortages due to raw material constraints - upstream supply chain vulnerability`);
+    }
+
+    return insights;
+  }
 }
 
 export default ShortageService;
