@@ -6,6 +6,7 @@ import { URL } from 'url';
 
 import { CacheService } from './cache-service.js';
 import { FDATool } from './fda-tool.js';
+import { FDAShortageTool } from './fda-shortage-tool.js';
 import { PubMedTool } from './pubmed-tool.js';
 import { HealthTopicsTool } from './health-topics-tool.js';
 import { ClinicalTrialsTool } from './clinical-trials-tool.js';
@@ -23,6 +24,7 @@ const cacheService = new CacheService(parseInt(process.env.CACHE_TTL) || 86400);
 const usageService = new UsageService();
 
 const fdaTool = new FDATool(cacheService);
+const fdaShortageTool = new FDAShortageTool(cacheService);
 const pubmedTool = new PubMedTool(cacheService);
 const healthTopicsTool = new HealthTopicsTool(cacheService);
 const clinicalTrialsTool = new ClinicalTrialsTool(cacheService);
@@ -48,6 +50,8 @@ async function handleCallTool(name, args) {
   switch (name) {
     case 'fda_drug_lookup':
       return fdaTool.lookupDrug(args.drug_name, args.search_type);
+    case 'fda_shortage_search':
+      return fdaShortageTool.searchShortages(args);
     case 'pubmed_search':
       return pubmedTool.searchLiterature(args.query, args.max_results, args.date_range, args.open_access);
     case 'medrxiv_search':
@@ -101,6 +105,21 @@ const server = http.createServer(async (req, res) => {
       const drugName = url.searchParams.get('drug_name') || '';
       const searchType = url.searchParams.get('search_type') || 'general';
       const result = await fdaTool.lookupDrug(drugName, searchType);
+      return writeJson(res, 200, result);
+    }
+
+    if (req.method === 'GET' && pathname === '/api/fda_shortages') {
+      const params = {
+        query: url.searchParams.get('query') || undefined,
+        status: url.searchParams.get('status') || 'all',
+        therapeutic_category: url.searchParams.get('therapeutic_category') || undefined,
+        dosage_form: url.searchParams.get('dosage_form') || undefined,
+        company_name: url.searchParams.get('company_name') || undefined,
+        limit: parseInt(url.searchParams.get('limit') || '20', 10),
+        skip: parseInt(url.searchParams.get('skip') || '0', 10),
+        sort: url.searchParams.get('sort') || 'initial_posting_date:desc'
+      };
+      const result = await fdaShortageTool.searchShortages(params);
       return writeJson(res, 200, result);
     }
 
