@@ -183,9 +183,8 @@ export class FDAShortageTool extends BaseTool {
    */
   async searchShortages(params = {}) {
     // Validate and set defaults
-    // FDA API maximum is 1000 results per request
-    const limit = Math.min(params.limit || 20, 1000);
-    const skip = params.skip || 0;
+    const requestedLimit = params.limit || 20;
+    const requestedSkip = params.skip || 0;
     const status = params.status || 'all';
 
     // Build cache key
@@ -201,15 +200,19 @@ export class FDAShortageTool extends BaseTool {
     try {
       console.error(`Fetching FDA shortage data with params: ${JSON.stringify(params)}`);
 
+      // CRITICAL FIX: When filtering by status, we must fetch a large dataset
+      // because FDA API doesn't have active/resolved as native fields.
+      // We normalize post-fetch, so fetching only 20 might give us 0 active results.
+      // Solution: Always fetch 1000 (FDA max), filter, then paginate
+      const fetchLimit = 1000; // Always fetch max to ensure we have data to filter
+
       // Build query parameters
       const apiParams = {
-        limit: limit
+        limit: fetchLimit
       };
 
-      // Add skip for pagination
-      if (skip > 0) {
-        apiParams.skip = skip;
-      }
+      // Don't use skip at API level - we'll paginate after filtering
+      // This ensures we get consistent results when filtering by status
 
       // Build search query
       const searchQuery = this.buildSearchQuery(params);
@@ -237,23 +240,28 @@ export class FDAShortageTool extends BaseTool {
       const data = await this.makeRequest(url);
 
       // Normalize the shortage data
-      let shortages = this.normalizeShortageData(data);
+      let allShortages = this.normalizeShortageData(data);
 
       // Apply status filter post-normalization (since FDA API status values vary)
+      let filteredShortages = allShortages;
       if (params.status && params.status !== 'all') {
-        shortages = shortages.filter(s => s.status === params.status);
+        filteredShortages = allShortages.filter(s => s.status === params.status);
       }
 
+      // NOW apply pagination on the filtered results
+      const totalFiltered = filteredShortages.length;
+      const paginatedShortages = filteredShortages.slice(requestedSkip, requestedSkip + requestedLimit);
+
       // Extract total from FDA API metadata if available
-      const fdaTotal = data?.meta?.results?.total || shortages.length;
+      const fdaTotal = data?.meta?.results?.total || allShortages.length;
 
       // Format response
       const result = this.formatSuccessResponse({
-        shortages: shortages,
-        total_results: shortages.length, // Count of results after filtering
-        total_in_fda: fdaTotal, // Total available in FDA database
-        limit: limit,
-        skip: skip,
+        shortages: paginatedShortages,
+        total_results: totalFiltered, // Total count AFTER filtering
+        total_in_fda: fdaTotal, // Total available in FDA database (before filtering)
+        limit: requestedLimit,
+        skip: requestedSkip,
         query_params: params
       });
 
