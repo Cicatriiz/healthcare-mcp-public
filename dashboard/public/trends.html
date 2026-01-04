@@ -45,16 +45,11 @@
         <!-- Content -->
         <div id="content" class="hidden">
             <!-- Key Metrics -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <div class="text-sm font-medium text-gray-600">Average Duration</div>
                     <div class="mt-2 text-3xl font-bold text-blue-600" id="avg-duration">-</div>
                     <div class="text-sm text-gray-500">days to resolution</div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <div class="text-sm font-medium text-gray-600">Median Duration</div>
-                    <div class="mt-2 text-3xl font-bold text-purple-600" id="median-duration">-</div>
-                    <div class="text-sm text-gray-500">days (middle value)</div>
                 </div>
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <div class="text-sm font-medium text-gray-600">Long-Running Active</div>
@@ -103,30 +98,11 @@
                 </div>
             </div>
 
-            <!-- Year-over-Year & Resolution Velocity -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <!-- YoY Comparison -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">📅 Year-over-Year Comparison</h2>
-                    <div id="yoy-content" class="space-y-3">
-                        <!-- YoY data will be populated here -->
-                    </div>
-                </div>
-
-                <!-- Resolution Velocity -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-4">⚡ Resolution Velocity (Last 30 Days)</h2>
-                    <div id="velocity-content" class="space-y-3">
-                        <!-- Velocity data will be populated here -->
-                    </div>
-                </div>
-            </div>
-
             <!-- Category Detailed Breakdown -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h2 class="text-lg font-semibold text-gray-900">📋 Category Detailed Analytics</h2>
-                    <p class="text-sm text-gray-600 mt-1">Comprehensive breakdown by therapeutic category with severity scoring</p>
+                    <p class="text-sm text-gray-600 mt-1">Comprehensive breakdown by therapeutic category</p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -137,7 +113,6 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Long-Running</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quick Resolve %</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturers</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Severity</th>
                             </tr>
                         </thead>
                         <tbody id="category-breakdown-table" class="bg-white divide-y divide-gray-200">
@@ -170,52 +145,6 @@
                 </div>
             </div>
 
-            <!-- Shortage Predictions -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-                <div class="px-6 py-4 border-b border-gray-200 bg-purple-50">
-                    <h2 class="text-lg font-semibold text-purple-900">🔮 Resolution Predictions (Top 20)</h2>
-                    <p class="text-sm text-purple-700 mt-1">Estimated resolution dates based on historical category averages</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Drug</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days Active</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Est. Remaining</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Predicted Resolution</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Confidence</th>
-                            </tr>
-                        </thead>
-                        <tbody id="predictions-table" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Long-Running Active Shortages Alert -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-                <div class="px-6 py-4 border-b border-gray-200 bg-red-50">
-                    <h2 class="text-lg font-semibold text-red-900">⚠️ Critical: Long-Running Active Shortages (90+ Days)</h2>
-                    <p class="text-sm text-red-700 mt-1">These shortages have been active for extended periods</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Drug Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturer</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Days Active</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Started</th>
-                            </tr>
-                        </thead>
-                        <tbody id="long-running-table" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
             <!-- Longest Resolved -->
             <div class="bg-white rounded-lg shadow-sm border border-gray-200">
                 <div class="px-6 py-4 border-b border-gray-200">
@@ -236,106 +165,6 @@
                         <tbody id="longest-table" class="bg-white divide-y divide-gray-200">
                         </tbody>
                     </table>
-                </div>
-            </div>
-
-            <!-- Economic Indicators (FRED Data) -->
-            <div id="economic-section" class="mt-8">
-                <div class="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-6 mb-6">
-                    <h2 class="text-xl font-semibold text-gray-900 mb-2">📈 Economic Context</h2>
-                    <p class="text-sm text-gray-700">Pharmaceutical manufacturing & supply chain economic indicators from Federal Reserve Economic Data (FRED)</p>
-                </div>
-
-                <!-- Economic Loading State -->
-                <div id="economic-loading" class="text-center py-8">
-                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                    <p class="mt-2 text-sm text-gray-600">Loading economic indicators...</p>
-                </div>
-
-                <!-- Economic Error State -->
-                <div id="economic-error" class="hidden bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6 mb-6">
-                    <div class="flex items-start">
-                        <span class="text-2xl mr-3">ℹ️</span>
-                        <div>
-                            <h4 class="text-yellow-900 font-semibold mb-2">Economic Indicators Unavailable</h4>
-                            <p class="text-yellow-800 text-sm mb-2" id="economic-error-message"></p>
-                            <p class="text-yellow-700 text-xs">
-                                💡 <strong>Note:</strong> This feature integrates real-time data from the Federal Reserve Economic Data (FRED) API.
-                                In production environments with internet access, this section will display:
-                            </p>
-                            <ul class="text-yellow-700 text-xs mt-2 ml-6 list-disc space-y-1">
-                                <li>Pharmaceutical Production Index trends</li>
-                                <li>Manufacturing Employment statistics</li>
-                                <li>Producer Price Index for pharmaceuticals</li>
-                                <li>Supply Chain Pressure indicators</li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Economic Content -->
-                <div id="economic-content" class="hidden space-y-6">
-                    <!-- Economic Insights -->
-                    <div id="economic-insights" class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                        <h3 class="text-lg font-semibold text-gray-900 mb-4">🎯 Economic Risk Signals</h3>
-                        <div id="economic-insights-content" class="space-y-2">
-                            <!-- Insights populated by JS -->
-                        </div>
-                    </div>
-
-                    <!-- Production & Employment Trends -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Pharmaceutical Production -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h3 class="text-md font-semibold text-gray-900 mb-2">🏭 Pharmaceutical Production</h3>
-                            <div class="mt-4">
-                                <div class="text-3xl font-bold" id="production-value">-</div>
-                                <div class="text-sm text-gray-600 mt-1" id="production-trend">-</div>
-                            </div>
-                            <div class="mt-4 relative" style="height: 200px;">
-                                <canvas id="production-chart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Manufacturing Employment -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h3 class="text-md font-semibold text-gray-900 mb-2">👷 Manufacturing Employment</h3>
-                            <div class="mt-4">
-                                <div class="text-3xl font-bold" id="employment-value">-</div>
-                                <div class="text-sm text-gray-600 mt-1" id="employment-trend">-</div>
-                            </div>
-                            <div class="mt-4 relative" style="height: 200px;">
-                                <canvas id="employment-chart"></canvas>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Price & Supply Chain -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Producer Price Index -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h3 class="text-md font-semibold text-gray-900 mb-2">💰 Producer Price Index</h3>
-                            <div class="mt-4">
-                                <div class="text-3xl font-bold" id="price-value">-</div>
-                                <div class="text-sm text-gray-600 mt-1" id="price-trend">-</div>
-                            </div>
-                            <div class="mt-4 relative" style="height: 200px;">
-                                <canvas id="price-chart"></canvas>
-                            </div>
-                        </div>
-
-                        <!-- Supply Chain Pressure -->
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                            <h3 class="text-md font-semibold text-gray-900 mb-2">🚚 Supply Chain Pressure</h3>
-                            <div class="mt-4">
-                                <div class="text-3xl font-bold" id="supply-chain-value">-</div>
-                                <div class="text-sm text-gray-600 mt-1" id="supply-chain-trend">-</div>
-                            </div>
-                            <div class="mt-4 relative" style="height: 200px;">
-                                <canvas id="supply-chain-chart"></canvas>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
 
@@ -728,7 +557,6 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             loadTrends();
-            loadEconomicData();
             loadShortageReasons();
             loadManufacturingConcentration();
 
@@ -762,7 +590,6 @@
 
                     // Update metrics
                     document.getElementById('avg-duration').textContent = trends.average_duration_days || 0;
-                    document.getElementById('median-duration').textContent = trends.median_duration_days || 0;
                     document.getElementById('long-running-count').textContent = trends.long_running_active.length;
                     document.getElementById('longest-active').textContent =
                         trends.long_running_active.length > 0 ? trends.long_running_active[0].days_since_start : 0;
@@ -777,11 +604,6 @@
                     renderLongestTable(trends.longest_resolved);
                     renderCategoryBreakdown(trends.category_breakdown);
                     renderCohortAnalysis(trends.cohort_analysis);
-                    renderPredictions(trends.shortage_predictions);
-
-                    // Render new analytics
-                    renderYoYComparison(trends.yoy_comparison);
-                    renderResolutionVelocity(trends.resolution_velocity);
 
                     // Render insights
                     renderInsights(trends);
@@ -1060,112 +882,15 @@
             });
         }
 
-        function renderYoYComparison(yoy) {
-            const content = document.getElementById('yoy-content');
-
-            // Handle edge cases for percentage calculations
-            const activeChange = isFinite(yoy.active_change_pct) ? Math.round(yoy.active_change_pct) : 0;
-            const activeIcon = activeChange > 0 ? '📈 ↑' : (activeChange < 0 ? '📉 ↓' : '➡️');
-            const activeColor = activeChange > 0 ? 'text-red-600' : (activeChange < 0 ? 'text-green-600' : 'text-gray-600');
-
-            const resolvedChange = isFinite(yoy.resolved_change_pct) ? Math.round(yoy.resolved_change_pct) : 0;
-            const resolvedIcon = resolvedChange > 0 ? '📈 ↑' : (resolvedChange < 0 ? '📉 ↓' : '➡️');
-            const resolvedColor = resolvedChange > 0 ? 'text-green-600' : (resolvedChange < 0 ? 'text-red-600' : 'text-gray-600');
-
-            content.innerHTML = `
-                <div class="border-b pb-3">
-                    <div class="text-xs text-gray-500 mb-1">Active Shortages</div>
-                    <div class="flex items-baseline justify-between">
-                        <div>
-                            <span class="text-2xl font-bold text-gray-900">${yoy.current_active}</span>
-                            <span class="text-sm text-gray-500 ml-2">${yoy.current_year}</span>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-sm ${activeColor} font-semibold">${activeIcon} ${Math.abs(activeChange)}%</div>
-                            <div class="text-xs text-gray-400">vs ${yoy.last_year_active} in ${yoy.last_year}</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="border-b pb-3">
-                    <div class="text-xs text-gray-500 mb-1">Resolved Shortages</div>
-                    <div class="flex items-baseline justify-between">
-                        <div>
-                            <span class="text-2xl font-bold text-gray-900">${yoy.current_resolved}</span>
-                            <span class="text-sm text-gray-500 ml-2">${yoy.current_year}</span>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-sm ${resolvedColor} font-semibold">${resolvedIcon} ${Math.abs(resolvedChange)}%</div>
-                            <div class="text-xs text-gray-400">vs ${yoy.last_year_resolved} in ${yoy.last_year}</div>
-                        </div>
-                    </div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-500 mb-1">Total Shortages</div>
-                    <div class="flex items-baseline justify-between">
-                        <div>
-                            <span class="text-2xl font-bold text-gray-900">${yoy.current_total}</span>
-                            <span class="text-sm text-gray-500 ml-2">${yoy.current_year}</span>
-                        </div>
-                        <div class="text-xs text-gray-400">vs ${yoy.last_year_total} in ${yoy.last_year}</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderResolutionVelocity(velocity) {
-            const content = document.getElementById('velocity-content');
-
-            const netChange = velocity.net_change;
-            const netIcon = netChange > 0 ? '✅' : (netChange < 0 ? '⚠️' : '➡️');
-            const netColor = netChange > 0 ? 'text-green-600' : (netChange < 0 ? 'text-red-600' : 'text-gray-600');
-            const netText = netChange > 0 ? 'Net improvement' : (netChange < 0 ? 'Net increase' : 'No net change');
-
-            content.innerHTML = `
-                <div class="border-b pb-3">
-                    <div class="text-xs text-gray-500 mb-1">Shortages Resolved</div>
-                    <div class="text-3xl font-bold text-green-600">${velocity.resolved_last_30_days}</div>
-                    <div class="text-xs text-gray-400 mt-1">In the last 30 days</div>
-                </div>
-                <div class="border-b pb-3">
-                    <div class="text-xs text-gray-500 mb-1">New Shortages Reported</div>
-                    <div class="text-3xl font-bold text-red-600">${velocity.new_last_30_days}</div>
-                    <div class="text-xs text-gray-400 mt-1">In the last 30 days</div>
-                </div>
-                <div>
-                    <div class="text-xs text-gray-500 mb-1">Net Change</div>
-                    <div class="flex items-baseline">
-                        <span class="text-2xl font-bold ${netColor}">${netIcon} ${Math.abs(netChange)}</span>
-                        <span class="text-sm text-gray-500 ml-2">${netText}</span>
-                    </div>
-                </div>
-            `;
-        }
-
         function renderCategoryBreakdown(categories) {
             const tbody = document.getElementById('category-breakdown-table');
 
             if (categories.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-sm text-gray-500 text-center">No category data available</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No category data available</td></tr>';
                 return;
             }
 
             tbody.innerHTML = categories.map(cat => {
-                let severityBadge = '';
-                let severityColor = '';
-                if (cat.severity_score >= 50) {
-                    severityBadge = '🔴 Critical';
-                    severityColor = 'bg-red-100 text-red-800';
-                } else if (cat.severity_score >= 25) {
-                    severityBadge = '🟠 High';
-                    severityColor = 'bg-orange-100 text-orange-800';
-                } else if (cat.severity_score >= 10) {
-                    severityBadge = '🟡 Medium';
-                    severityColor = 'bg-yellow-100 text-yellow-800';
-                } else {
-                    severityBadge = '🟢 Low';
-                    severityColor = 'bg-green-100 text-green-800';
-                }
-
                 return `
                     <tr class="hover:bg-gray-50">
                         <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(cat.category)}</td>
@@ -1173,11 +898,6 @@
                         <td class="px-6 py-4 text-sm text-red-600 font-semibold">${cat.long_running_count}</td>
                         <td class="px-6 py-4 text-sm text-gray-600">${cat.quick_resolution_rate}%</td>
                         <td class="px-6 py-4 text-sm text-gray-600">${cat.manufacturer_count}</td>
-                        <td class="px-6 py-4 text-sm">
-                            <span class="px-2 py-1 rounded-full text-xs font-medium ${severityColor}">
-                                ${severityBadge} (${cat.severity_score})
-                            </span>
-                        </td>
                     </tr>
                 `;
             }).join('');
@@ -1208,44 +928,6 @@
             }).join('');
         }
 
-        function renderPredictions(predictions) {
-            const tbody = document.getElementById('predictions-table');
-
-            if (predictions.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No predictions available</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = predictions.map(pred => {
-                let confidenceBadge = '';
-                let confidenceColor = '';
-                if (pred.confidence === 'high') {
-                    confidenceBadge = '✅ High';
-                    confidenceColor = 'bg-green-100 text-green-800';
-                } else if (pred.confidence === 'medium') {
-                    confidenceBadge = '⚠️ Medium';
-                    confidenceColor = 'bg-yellow-100 text-yellow-800';
-                } else {
-                    confidenceBadge = '⚪ Low';
-                    confidenceColor = 'bg-gray-100 text-gray-800';
-                }
-
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(pred.drug)}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${pred.days_active} days</td>
-                        <td class="px-6 py-4 text-sm font-semibold text-purple-600">${pred.estimated_days_remaining} days</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">${pred.predicted_resolution_date}</td>
-                        <td class="px-6 py-4 text-sm">
-                            <span class="px-2 py-1 rounded-full text-xs font-medium ${confidenceColor}">
-                                ${confidenceBadge}
-                            </span>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
         function renderInsights(trends) {
             const insightsContent = document.getElementById('insights-content');
             const insights = [];
@@ -1265,11 +947,8 @@
             }
 
             // Duration insights
-            if (trends.average_duration_days && trends.median_duration_days) {
-                const diff = trends.average_duration_days - trends.median_duration_days;
-                if (diff > trends.median_duration_days * 0.5) {
-                    insights.push(`<strong>📈 Duration Analysis:</strong> Average (${trends.average_duration_days} days) is ${Math.round((diff / trends.median_duration_days) * 100)}% higher than median (${trends.median_duration_days} days), indicating some very long-lasting shortages skewing the data`);
-                }
+            if (trends.average_duration_days) {
+                insights.push(`<strong>📈 Duration Analysis:</strong> Average shortage duration is ${trends.average_duration_days} days`);
             }
 
             // Long-running critical
@@ -1298,16 +977,6 @@
                 insights.push(`<strong>🏭 Manufacturer Alert:</strong> ${topMfg.manufacturer} has the most active shortages (${topMfg.active_shortages}) with ${topMfg.long_running_count} long-running issues`);
             }
 
-            // Resolution velocity insights
-            if (trends.resolution_velocity) {
-                const vel = trends.resolution_velocity;
-                if (vel.net_change > 0) {
-                    insights.push(`<strong>✅ Resolution Progress:</strong> ${vel.net_change} net reduction in last 30 days (${vel.resolved_last_30_days} resolved vs ${vel.new_last_30_days} new)`);
-                } else if (vel.net_change < 0) {
-                    insights.push(`<strong>⚠️ Growing Problem:</strong> ${Math.abs(vel.net_change)} net increase in last 30 days (${vel.new_last_30_days} new vs ${vel.resolved_last_30_days} resolved)`);
-                }
-            }
-
             insightsContent.innerHTML = insights.map(i => `<div class="flex items-start"><span class="mr-2">•</span><span>${i}</span></div>`).join('');
         }
 
@@ -1321,189 +990,6 @@
         // Economic Data Loading
         let productionChart, employmentChart, priceChart, supplyChainChart;
 
-        async function loadEconomicData() {
-            const economicLoading = document.getElementById('economic-loading');
-            const economicError = document.getElementById('economic-error');
-            const economicContent = document.getElementById('economic-content');
-
-            try {
-                economicLoading.classList.remove('hidden');
-                economicError.classList.add('hidden');
-
-                // Fetch both economic indicators and trend analysis
-                const [indicatorsResult, trendsResult] = await Promise.all([
-                    api.getEconomicIndicators(),
-                    api.getEconomicTrends()
-                ]);
-
-                if (indicatorsResult.status === 'success' && trendsResult.status === 'success') {
-                    // Check if we have any actual data
-                    const hasData =
-                        (indicatorsResult.pharmaceutical_production?.data?.length > 0) ||
-                        (indicatorsResult.manufacturing_employment?.data?.length > 0) ||
-                        (indicatorsResult.producer_price_index?.data?.length > 0) ||
-                        (indicatorsResult.supply_chain_pressure?.data?.length > 0);
-
-                    if (hasData) {
-                        renderEconomicIndicators(indicatorsResult, trendsResult);
-                        economicContent.classList.remove('hidden');
-                    } else {
-                        throw new Error('No economic data available from FRED API. External internet access required to fetch Federal Reserve Economic Data.');
-                    }
-                } else {
-                    throw new Error('Failed to load economic data');
-                }
-            } catch (error) {
-                console.error('Error loading economic data:', error);
-                document.getElementById('economic-error-message').textContent =
-                    error.message || 'Economic indicators temporarily unavailable. This feature requires external API access to the Federal Reserve Economic Data (FRED) service.';
-                economicError.classList.remove('hidden');
-            } finally {
-                economicLoading.classList.add('hidden');
-            }
-        }
-
-        function renderEconomicIndicators(indicators, trends) {
-            const analysis = trends.analysis;
-            const insights = trends.insights || [];
-
-            // Render insights
-            const insightsHtml = insights.map(insight => {
-                let icon = '📊';
-                let colorClass = 'text-gray-700';
-
-                if (insight.type === 'warning') {
-                    icon = '⚠️';
-                    colorClass = 'text-orange-700';
-                } else if (insight.type === 'alert') {
-                    icon = '🔴';
-                    colorClass = 'text-red-700';
-                } else if (insight.type === 'critical') {
-                    icon = '🚨';
-                    colorClass = 'text-red-800 font-semibold';
-                } else if (insight.type === 'positive') {
-                    icon = '✅';
-                    colorClass = 'text-green-700';
-                }
-
-                return `<div class="flex items-start"><span class="mr-2">${icon}</span><span class="${colorClass}">${insight.message}</span></div>`;
-            }).join('');
-
-            document.getElementById('economic-insights-content').innerHTML = insightsHtml || '<div class="text-gray-600 italic">No significant economic risk signals detected</div>';
-
-            // Update values and trends - check if data exists
-            if (analysis.production_trend && indicators.pharmaceutical_production?.data) {
-                updateIndicatorCard('production', analysis.production_trend, indicators.pharmaceutical_production.data);
-            }
-            if (analysis.employment_trend && indicators.manufacturing_employment?.data) {
-                updateIndicatorCard('employment', analysis.employment_trend, indicators.manufacturing_employment.data);
-            }
-            if (analysis.price_trend && indicators.producer_price_index?.data) {
-                updateIndicatorCard('price', analysis.price_trend, indicators.producer_price_index.data);
-            }
-            if (analysis.supply_chain_trend && indicators.supply_chain_pressure?.data) {
-                updateIndicatorCard('supply-chain', analysis.supply_chain_trend, indicators.supply_chain_pressure.data);
-            }
-
-            // Render charts only if data exists
-            if (indicators.pharmaceutical_production?.data?.length > 0) {
-                renderEconomicChart('production-chart', indicators.pharmaceutical_production.data, 'Production Index', '#3b82f6');
-            }
-            if (indicators.manufacturing_employment?.data?.length > 0) {
-                renderEconomicChart('employment-chart', indicators.manufacturing_employment.data, 'Employment (thousands)', '#8b5cf6');
-            }
-            if (indicators.producer_price_index?.data?.length > 0) {
-                renderEconomicChart('price-chart', indicators.producer_price_index.data, 'Price Index', '#f59e0b');
-            }
-            if (indicators.supply_chain_pressure?.data?.length > 0) {
-                renderEconomicChart('supply-chain-chart', indicators.supply_chain_pressure.data, 'Pressure Index', '#ef4444');
-            }
-        }
-
-        function updateIndicatorCard(type, trendData, data) {
-            const value = trendData.latest_value ? trendData.latest_value.toFixed(1) : '-';
-            const direction = trendData.direction;
-            const magnitude = trendData.magnitude ? trendData.magnitude.toFixed(1) : '0';
-
-            let trendIcon = '→';
-            let trendColor = 'text-gray-600';
-
-            if (direction === 'increasing') {
-                trendIcon = '↑';
-                trendColor = type === 'price' || type === 'supply-chain' ? 'text-red-600' : 'text-green-600';
-            } else if (direction === 'decreasing') {
-                trendIcon = '↓';
-                trendColor = type === 'production' || type === 'employment' ? 'text-red-600' : 'text-green-600';
-            }
-
-            document.getElementById(`${type}-value`).textContent = value;
-            document.getElementById(`${type}-trend`).innerHTML =
-                `<span class="${trendColor} font-semibold">${trendIcon} ${magnitude}%</span> ${direction}`;
-        }
-
-        function renderEconomicChart(canvasId, data, label, color) {
-            const ctx = document.getElementById(canvasId);
-            if (!ctx) return;
-
-            // Destroy existing chart if it exists
-            const existingChart = Chart.getChart(ctx);
-            if (existingChart) {
-                existingChart.destroy();
-            }
-
-            // Prepare data - take last 24 data points
-            const chartData = Array.isArray(data) ? data.slice(-24) : [];
-
-            // Don't render if no data
-            if (chartData.length === 0) {
-                ctx.getContext('2d').clearRect(0, 0, ctx.width, ctx.height);
-                return;
-            }
-
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData.map(d => d.date || ''),
-                    datasets: [{
-                        label: label,
-                        data: chartData.map(d => d.value || 0),
-                        borderColor: color,
-                        backgroundColor: color + '20',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false
-                        }
-                    },
-                    scales: {
-                        x: {
-                            display: true,
-                            ticks: {
-                                maxTicksLimit: 6,
-                                autoSkip: true
-                            }
-                        },
-                        y: {
-                            display: true,
-                            beginAtZero: false
-                        }
-                    }
-                }
-            });
-        }
-
-        // Shortage Reasons Analysis
         async function loadShortageReasons() {
             const reasonsLoading = document.getElementById('reasons-loading');
             const reasonsError = document.getElementById('reasons-error');
