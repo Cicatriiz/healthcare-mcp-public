@@ -98,75 +98,7 @@
                 </div>
             </div>
 
-            <!-- Category Detailed Breakdown -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">📋 Category Detailed Analytics</h2>
-                    <p class="text-sm text-gray-600 mt-1">Comprehensive breakdown by therapeutic category</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Active</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Long-Running</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quick Resolve %</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturers</th>
-                            </tr>
-                        </thead>
-                        <tbody id="category-breakdown-table" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
-            <!-- Cohort Analysis -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">🗓️ Cohort Analysis</h2>
-                    <p class="text-sm text-gray-600 mt-1">Shortage patterns grouped by start year</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cohort Year</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Total</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Still Active</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resolved</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Resolution Rate</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Duration</th>
-                            </tr>
-                        </thead>
-                        <tbody id="cohort-table" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Longest Resolved -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h2 class="text-lg font-semibold text-gray-900">Top 10 Longest Resolved Shortages</h2>
-                    <p class="text-sm text-gray-600 mt-1">Historical shortages with longest duration</p>
-                </div>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Drug Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Manufacturer</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Period</th>
-                            </tr>
-                        </thead>
-                        <tbody id="longest-table" class="bg-white divide-y divide-gray-200">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
             <!-- Shortage Root Causes -->
             <div id="shortage-reasons-section" class="mt-8">
@@ -310,10 +242,6 @@
                     renderDurationChart(trends.avg_duration_by_category);
                     renderManufacturerRiskChart(trends.manufacturer_risk);
 
-                    // Render tables
-                    renderLongestTable(trends.longest_resolved);
-                    renderCategoryBreakdown(trends.category_breakdown);
-                    renderCohortAnalysis(trends.cohort_analysis);
 
                     // Render insights
                     renderInsights(trends);
@@ -467,39 +395,6 @@
         }
 
 
-        function renderLongestTable(data) {
-            const tbody = document.getElementById('longest-table');
-
-            if (data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No resolved shortages with duration data</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = data.map(item => {
-                const yearsResolved = Math.floor(item.duration_days / 365);
-
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(item.drug)}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.manufacturer)}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${escapeHtml(item.category)}</td>
-                        <td class="px-6 py-4 text-sm font-bold text-purple-600">
-                            ${item.duration_days} days
-                            ${yearsResolved > 0 ? `<br><span class="text-xs text-gray-500">(${yearsResolved}+ years)</span>` : ''}
-                        </td>
-                        <td class="px-6 py-4 text-sm text-gray-500">
-                            <div class="flex flex-col">
-                                <span class="text-xs text-gray-400">Started:</span>
-                                <span>${item.started}</span>
-                                <span class="text-xs text-gray-400 mt-1">Resolved:</span>
-                                <span>${item.resolved}</span>
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
         function renderManufacturerRiskChart(manufacturers) {
             const ctx = document.getElementById('manufacturer-risk-chart').getContext('2d');
 
@@ -556,52 +451,6 @@
                     }
                 }
             });
-        }
-
-        function renderCategoryBreakdown(categories) {
-            const tbody = document.getElementById('category-breakdown-table');
-
-            if (categories.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-sm text-gray-500 text-center">No category data available</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = categories.map(cat => {
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm font-medium text-gray-900">${escapeHtml(cat.category)}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">${cat.active}</td>
-                        <td class="px-6 py-4 text-sm text-red-600 font-semibold">${cat.long_running_count}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${cat.quick_resolution_rate}%</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${cat.manufacturer_count}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        function renderCohortAnalysis(cohorts) {
-            const tbody = document.getElementById('cohort-table');
-
-            if (cohorts.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-4 text-sm text-gray-500 text-center">No cohort data available</td></tr>';
-                return;
-            }
-
-            tbody.innerHTML = cohorts.map(cohort => {
-                const resolutionColor = cohort.resolution_rate >= 80 ? 'text-green-600' : (cohort.resolution_rate >= 50 ? 'text-yellow-600' : 'text-red-600');
-                const activeHighlight = cohort.still_active > cohort.resolved ? 'font-bold text-red-600' : '';
-
-                return `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 text-sm font-semibold text-gray-900">${cohort.cohort_year}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">${cohort.total_shortages}</td>
-                        <td class="px-6 py-4 text-sm ${activeHighlight}">${cohort.still_active}</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${cohort.resolved}</td>
-                        <td class="px-6 py-4 text-sm font-semibold ${resolutionColor}">${cohort.resolution_rate}%</td>
-                        <td class="px-6 py-4 text-sm text-gray-600">${cohort.avg_duration} days</td>
-                    </tr>
-                `;
-            }).join('');
         }
 
         function renderInsights(trends) {
@@ -858,8 +707,8 @@
                 const rowClass = isDiscontinued ? 'bg-orange-50 border-l-4 border-orange-400' : '';
                 const categoryClass = isDiscontinued ? 'font-semibold text-orange-900' : 'font-medium text-gray-900';
 
-                // Get up to 3 examples
-                const examples = cat.examples.slice(0, 3).join(', ');
+                // Get up to 3 examples - extract drug names from objects
+                const examples = cat.examples.slice(0, 3).map(e => e.drug).join(', ');
                 const moreCount = cat.examples.length > 3 ? ` (+${cat.examples.length - 3} more)` : '';
 
                 return `
