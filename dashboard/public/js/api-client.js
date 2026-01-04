@@ -17,7 +17,10 @@ class DashboardAPI {
      */
     async request(endpoint, params = {}) {
         try {
-            const url = new URL(endpoint, this.baseUrl);
+            // Remove leading slash if present to properly append to base URL
+            const cleanEndpoint = endpoint.startsWith('/') ? endpoint.substring(1) : endpoint;
+            const fullUrl = `${this.baseUrl}/${cleanEndpoint}`;
+            const url = new URL(fullUrl);
 
             // Add query parameters
             Object.keys(params).forEach(key => {
