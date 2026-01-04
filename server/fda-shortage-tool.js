@@ -106,12 +106,16 @@ export class FDAShortageTool extends BaseTool {
 
   /**
    * Normalize status field to consistent values
+   * FDA API uses various status values - we normalize them to 'active' or 'resolved'
    */
   normalizeStatus(status) {
-    if (!status) return 'unknown';
+    if (!status) return 'active'; // Default to active if no status
 
     const normalized = status.toLowerCase();
-    if (normalized.includes('discontinue') || normalized.includes('resolved')) {
+    // Check for resolved/discontinued indicators
+    if (normalized.includes('discontinue') ||
+        normalized.includes('resolved') ||
+        normalized.includes('available')) {
       return 'resolved';
     }
     return 'active';
@@ -130,12 +134,14 @@ export class FDAShortageTool extends BaseTool {
     }
 
     // Status filter
+    // Note: FDA API doesn't have a simple active/resolved field
+    // We filter post-normalization instead of in the API query
+    // The actual status field has values like "Currently in Shortage", "Available", "Discontinued"
+    // So we fetch all and filter in normalizeShortageData based on normalized status
     if (params.status && params.status !== 'all') {
-      if (params.status === 'active') {
-        conditions.push('(NOT status:"Discontinued")');
-      } else if (params.status === 'resolved') {
-        conditions.push('status:"Discontinued"');
-      }
+      // For now, don't filter at API level - let normalizeShortageData handle it
+      // This ensures we get accurate counts
+      // TODO: Optimize by adding proper FDA API status filtering once we know exact field values
     }
 
     // Therapeutic category filter
@@ -230,12 +236,17 @@ export class FDAShortageTool extends BaseTool {
       const data = await this.makeRequest(url);
 
       // Normalize the shortage data
-      const shortages = this.normalizeShortageData(data);
+      let shortages = this.normalizeShortageData(data);
+
+      // Apply status filter post-normalization (since FDA API status values vary)
+      if (params.status && params.status !== 'all') {
+        shortages = shortages.filter(s => s.status === params.status);
+      }
 
       // Format response
       const result = this.formatSuccessResponse({
         shortages: shortages,
-        total_results: data.meta?.results?.total || shortages.length,
+        total_results: shortages.length, // Use actual filtered count
         limit: limit,
         skip: skip,
         query_params: params

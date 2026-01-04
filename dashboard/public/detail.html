@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortage Detail - FDA Drug Shortage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">FDA Drug Shortage Intelligence Dashboard</h1>
+                    <p class="text-sm text-gray-600 mt-1">Shortage Detail</p>
+                </div>
+                <nav class="flex space-x-4">
+                    <a href="index.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">← Back to Shortages</a>
+                    <a href="analytics.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Analytics</a>
+                    <a href="about.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">About</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-600">Loading shortage details...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <div class="text-red-600 text-lg font-semibold mb-2">Error Loading Details</div>
+            <div id="error-message" class="text-red-800 mb-4"></div>
+            <a href="index.html" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Detail Content -->
+        <div id="detail-content" class="hidden space-y-6">
+            <!-- Basic Info Card -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h2 id="drug-name" class="text-3xl font-bold text-gray-900 mb-2">Loading...</h2>
+                        <p id="brand-name" class="text-lg text-gray-600 mb-4"></p>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">NDC</div>
+                                <div id="ndc" class="mt-1 text-sm text-gray-900">-</div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Manufacturer</div>
+                                <div id="manufacturer" class="mt-1 text-sm text-gray-900">-</div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Dosage Form</div>
+                                <div id="dosage-form" class="mt-1 text-sm text-gray-900">-</div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Route</div>
+                                <div id="route" class="mt-1 text-sm text-gray-900">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="status-badge"></div>
+                </div>
+            </div>
+
+            <!-- Shortage Information -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Shortage Information</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Initial Posting Date</dt>
+                        <dd id="initial-date" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+                        <dd id="last-updated" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Therapeutic Categories</dt>
+                        <dd id="categories" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Strength</dt>
+                        <dd id="strength" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div class="md:col-span-2">
+                        <dt class="text-sm font-medium text-gray-500">Shortage Reason</dt>
+                        <dd id="shortage-reason" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div class="md:col-span-2">
+                        <dt class="text-sm font-medium text-gray-500">Availability</dt>
+                        <dd id="availability" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div class="md:col-span-2" id="related-info-container" class="hidden">
+                        <dt class="text-sm font-medium text-gray-500">Related Information</dt>
+                        <dd id="related-info" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Enrichment Note -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p class="text-sm text-blue-800">
+                    <strong>Note:</strong> Clinical enrichment features (PubMed articles, Health.gov guidelines, Clinical Trials, etc.)
+                    are available via the API. This UI shows basic shortage information. For full enrichment data,
+                    use the API endpoint: <code class="bg-blue-100 px-2 py-1 rounded">/api/dashboard/shortages/:ndc?enrich=true</code>
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/api-client.js"></script>
+    <script>
+        // Get NDC from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const ndc = urlParams.get('ndc');
+
+        // Load detail on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!ndc) {
+                showError('No NDC specified in URL');
+                return;
+            }
+            loadShortageDetail(ndc);
+        });
+
+        async function loadShortageDetail(ndc) {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const content = document.getElementById('detail-content');
+
+            try {
+                loading.classList.remove('hidden');
+                error.classList.add('hidden');
+                content.classList.add('hidden');
+
+                // Fetch shortage detail (without enrichment for now - just basic info)
+                const result = await api.getShortageDetail(ndc, false);
+
+                if (result.status === 'success' && result.shortage) {
+                    renderShortageDetail(result.shortage);
+                    content.classList.remove('hidden');
+                } else {
+                    throw new Error(result.error_message || 'Shortage not found');
+                }
+            } catch (err) {
+                console.error('Error loading shortage detail:', err);
+                showError(err.message);
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function renderShortageDetail(shortage) {
+            // Basic info
+            document.getElementById('drug-name').textContent = shortage.generic_name || 'Unknown Drug';
+            document.getElementById('brand-name').textContent = shortage.brand_name || '';
+            document.getElementById('ndc').textContent = shortage.ndc || '-';
+            document.getElementById('manufacturer').textContent = shortage.manufacturer || 'Unknown';
+            document.getElementById('dosage-form').textContent = shortage.dosage_form || '-';
+            document.getElementById('route').textContent = shortage.route || '-';
+
+            // Status badge
+            const statusBadge = document.getElementById('status-badge');
+            if (shortage.status === 'active') {
+                statusBadge.innerHTML = '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800">Active Shortage</span>';
+            } else {
+                statusBadge.innerHTML = '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">Resolved</span>';
+            }
+
+            // Dates
+            document.getElementById('initial-date').textContent = shortage.initial_date
+                ? new Date(shortage.initial_date).toLocaleDateString()
+                : '-';
+            document.getElementById('last-updated').textContent = shortage.last_updated
+                ? new Date(shortage.last_updated).toLocaleDateString()
+                : '-';
+
+            // Categories
+            const categories = shortage.therapeutic_categories || [];
+            document.getElementById('categories').textContent = categories.length > 0
+                ? categories.join(', ')
+                : 'Not specified';
+
+            // Strength
+            const strengths = shortage.strength || [];
+            document.getElementById('strength').textContent = strengths.length > 0
+                ? strengths.join(', ')
+                : '-';
+
+            // Shortage details
+            document.getElementById('shortage-reason').textContent = shortage.shortage_reason || 'Not specified';
+            document.getElementById('availability').textContent = shortage.availability || 'Not specified';
+
+            // Related info
+            if (shortage.related_info) {
+                document.getElementById('related-info-container').classList.remove('hidden');
+                const relatedInfoEl = document.getElementById('related-info');
+                if (shortage.related_info_link) {
+                    relatedInfoEl.innerHTML = `<a href="${shortage.related_info_link}" target="_blank" class="text-blue-600 hover:underline">${shortage.related_info}</a>`;
+                } else {
+                    relatedInfoEl.textContent = shortage.related_info;
+                }
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
