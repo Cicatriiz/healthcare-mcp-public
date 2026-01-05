@@ -22,6 +22,7 @@ import { HistoryService } from './services/history-service.js';
 import { DailyMedService } from './services/dailymed-service.js';
 import { FDAAdverseEventsTool } from './tools/fda-adverse-events-tool.js';
 import { FDAEnforcementTool } from './tools/fda-enforcement-tool.js';
+import { ManufacturerLocationService } from './services/manufacturer-location-service.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -54,6 +55,9 @@ const historyService = new HistoryService();
 const dailymedService = new DailyMedService(cacheService);
 const adverseEventsService = new FDAAdverseEventsTool(cacheService);
 const enforcementService = new FDAEnforcementTool(cacheService);
+
+// Initialize Manufacturer Location Service
+const manufacturerLocationService = new ManufacturerLocationService(cacheService);
 
 // Initialize Shortage Service with all tools and services
 const shortageService = new ShortageService({
@@ -471,6 +475,79 @@ const server = http.createServer(async (req, res) => {
         // Get comprehensive enriched data
         const result = await shortageService.getComprehensiveShortageData(ndc);
         return writeJson(res, 200, result);
+      }
+
+      // Manufacturer Location Endpoints
+
+      // Get location for a specific manufacturer
+      if (dashboardPath === '/manufacturer-location') {
+        const manufacturerName = url.searchParams.get('name');
+        if (!manufacturerName) {
+          return writeJson(res, 400, { status: 'error', error_message: 'name parameter required' });
+        }
+
+        const result = await manufacturerLocationService.getManufacturerLocation(manufacturerName);
+        return writeJson(res, 200, result);
+      }
+
+      // Get all manufacturer locations
+      if (dashboardPath === '/manufacturer-locations') {
+        const result = await manufacturerLocationService.getAllManufacturerLocations();
+        return writeJson(res, 200, result);
+      }
+
+      // Get manufacturers by state
+      if (dashboardPath === '/manufacturers-by-state') {
+        const state = url.searchParams.get('state');
+        if (!state) {
+          return writeJson(res, 400, { status: 'error', error_message: 'state parameter required' });
+        }
+
+        const result = await manufacturerLocationService.getManufacturersByState(state);
+        return writeJson(res, 200, result);
+      }
+
+      // Get shortages enriched with manufacturer locations
+      if (dashboardPath === '/shortages-with-locations') {
+        const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+        const page = parseInt(url.searchParams.get('page') || '1', 10);
+        const skip = (page - 1) * limit;
+
+        const params = {
+          status: url.searchParams.get('status') || 'all',
+          therapeutic_category: url.searchParams.get('therapeutic_category') || undefined,
+          dosage_form: url.searchParams.get('dosage_form') || undefined,
+          company_name: url.searchParams.get('manufacturer') || undefined,
+          query: url.searchParams.get('query') || undefined,
+          limit,
+          skip
+        };
+
+        // First get the shortages
+        const shortagesResult = await shortageService.fetchShortages(params);
+
+        if (shortagesResult.status === 'success') {
+          // Then enrich with location data
+          const enrichedResult = await manufacturerLocationService.enrichShortagesWithLocations(shortagesResult.data);
+
+          const total = shortagesResult.total || 0;
+          const totalPages = Math.ceil(total / limit);
+
+          return writeJson(res, 200, {
+            status: 'success',
+            data: enrichedResult.shortages,
+            pagination: {
+              page,
+              limit,
+              total,
+              totalPages,
+              hasPrev: page > 1,
+              hasNext: page < totalPages
+            }
+          });
+        }
+
+        return writeJson(res, 200, shortagesResult);
       }
     }
 
