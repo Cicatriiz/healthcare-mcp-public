@@ -546,18 +546,22 @@
             error.classList.add('hidden');
 
             try {
+                console.log('[DailyMed] Fetching data for NDC:', ndc);
                 const data = await api.getDailyMedInfo(ndc);
+                console.log('[DailyMed] Response:', data);
 
                 if (data.status === 'success' && data.images) {
+                    console.log('[DailyMed] Rendering data - Product images:', data.images.product_images?.length, 'Package images:', data.images.package_images?.length);
                     renderDailyMedData(data);
                     loading.classList.add('hidden');
                     content.classList.remove('hidden');
                 } else {
+                    console.log('[DailyMed] No data available - Status:', data.status, 'Message:', data.message || data.error_message);
                     loading.classList.add('hidden');
                     error.classList.remove('hidden');
                 }
             } catch (err) {
-                console.error('Error loading DailyMed data:', err);
+                console.error('[DailyMed] Error loading data:', err);
                 loading.classList.add('hidden');
                 error.classList.remove('hidden');
             }

@@ -1474,6 +1474,7 @@ export class ShortageService {
    */
   async getDailyMedInfo(shortage) {
     if (!this.dailymed) {
+      console.error('[ShortageService] DailyMed service not configured');
       return { status: 'not_available', message: 'DailyMed service not configured' };
     }
 
@@ -1481,12 +1482,16 @@ export class ShortageService {
       const ndc = shortage.ndc;
       const drugName = shortage.generic_name || shortage.brand_name;
 
+      console.error(`[ShortageService] Getting DailyMed info - NDC: ${ndc}, Drug: ${drugName}`);
+
       if (!ndc && !drugName) {
+        console.error('[ShortageService] No NDC or drug name available');
         return { status: 'error', message: 'No NDC or drug name available for DailyMed lookup' };
       }
 
       // Pass both NDC and drug name (drug name used as fallback)
       const result = await this.dailymed.getDrugInfo(ndc || 'unknown', drugName);
+      console.error(`[ShortageService] DailyMed result status: ${result.status}`);
       return result;
     } catch (error) {
       console.error('[ShortageService] Error fetching DailyMed info:', error);

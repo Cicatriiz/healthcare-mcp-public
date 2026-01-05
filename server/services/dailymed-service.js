@@ -266,13 +266,17 @@ export class DailyMedService {
      */
     async getDrugInfo(ndc, drugName = null) {
         try {
+            console.error(`[DailyMed] getDrugInfo called - NDC: ${ndc}, drugName: ${drugName}`);
+
             // Try to get label by NDC first
             const labelResult = await this.getLabelByNDC(ndc);
+            console.error(`[DailyMed] NDC lookup result - status: ${labelResult.status}, labels: ${labelResult.labels?.length || 0}`);
 
             // If NDC lookup fails and we have a drug name, try searching by name
             if ((labelResult.status === 'error' || !labelResult.labels || labelResult.labels.length === 0) && drugName) {
-                console.log(`NDC lookup failed for ${ndc}, trying drug name: ${drugName}`);
+                console.error(`[DailyMed] NDC lookup failed for ${ndc}, trying drug name: ${drugName}`);
                 const nameResult = await this.searchByDrugName(drugName);
+                console.error(`[DailyMed] Drug name search result - status: ${nameResult.status}, labels: ${nameResult.labels?.length || 0}`);
 
                 if (nameResult.status === 'success' && nameResult.labels && nameResult.labels.length > 0) {
                     // Use the name search results instead
