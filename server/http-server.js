@@ -23,6 +23,7 @@ import { DailyMedService } from './services/dailymed-service.js';
 import { FDAAdverseEventsTool } from './tools/fda-adverse-events-tool.js';
 import { FDAEnforcementTool } from './tools/fda-enforcement-tool.js';
 import { ManufacturerLocationService } from './services/manufacturer-location-service.js';
+import snapshotService from './services/snapshot-service.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -69,7 +70,10 @@ const shortageService = new ShortageService({
   medicalTerminology: medicalTerminologyTool,
   medrxiv: medrxivTool,
   ncbiBookshelf: ncbiBookshelfTool
-}, cacheService, historyService, rxnormService, dailymedService, adverseEventsService, enforcementService);
+}, cacheService, historyService, rxnormService, dailymedService, adverseEventsService, enforcementService, manufacturerLocationService);
+// Initialize Snapshot Service
+snapshotService.initialize();
+snapshotService.setShortageService(shortageService);
 
 const DASHBOARD_PUBLIC = path.join(__dirname, '..', 'dashboard', 'public');
 const MIME_TYPES = {
@@ -327,6 +331,38 @@ const server = http.createServer(async (req, res) => {
         return writeJson(res, 200, result);
       }
 
+
+      // Get trend statistics
+      if (dashboardPath === '/trends/statistics') {
+        const stats = snapshotService.getTrendStatistics();
+        return writeJson(res, 200, { status: 'success', data: stats });
+      }
+
+      // Get all snapshots metadata
+      if (dashboardPath === '/snapshots') {
+        const snapshots = snapshotService.getAllSnapshots();
+        return writeJson(res, 200, { status: 'success', data: snapshots });
+      }
+
+      // Get drug trend by NDC or generic name
+      if (dashboardPath === '/trends/drug') {
+        const ndc = url.searchParams.get('ndc');
+        const genericName = url.searchParams.get('generic_name');
+
+        if (!ndc && !genericName) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc or generic_name parameter required' });
+        }
+
+        const trend = snapshotService.getDrugTrend(ndc, genericName);
+        return writeJson(res, 200, { status: 'success', data: trend });
+      }
+
+      // Manually trigger a snapshot (for testing)
+      if (dashboardPath === '/snapshots/trigger' && req.method === 'POST') {
+        const snapshotId = await snapshotService.takeSnapshot();
+        return writeJson(res, 200, { status: 'success', snapshot_id: snapshotId });
+      }
+
       if (dashboardPath === '/therapeutic-classes') {
         const result = await shortageService.getTherapeuticCategories();
         return writeJson(res, 200, result);
@@ -563,6 +599,18 @@ const server = http.createServer(async (req, res) => {
     console.error('HTTP handler error:', error);
     writeJson(res, 500, { status: 'error', error_message: error.message });
   }
+});
+
+
+// Start daily snapshot scheduler and take initial snapshot
+snapshotService.startScheduler('0 0 * * *'); // Daily at midnight
+console.log('📸 Taking initial snapshot...');
+snapshotService.takeSnapshot().then(snapshotId => {
+  if (snapshotId) {
+    console.log(`✅ Initial snapshot complete (ID: ${snapshotId})`);
+  }
+}).catch(err => {
+  console.error('❌ Initial snapshot failed:', err);
 });
 
 server.listen(PORT, () => {

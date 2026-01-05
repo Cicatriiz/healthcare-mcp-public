@@ -15,7 +15,8 @@
                     <a href="index.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Shortages</a>
                     <a href="analytics.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Analytics</a>
                     <a href="trends.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Trends</a>
-                    <a href="map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Map</a>
+                    <a href="map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Shortage Map</a>
+                    <a href="manufacturers-map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">All Manufacturers</a>
                     <a href="about.html" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium">About</a>
                 </nav>
             </div>
@@ -41,6 +42,8 @@
                 <ul class="list-disc list-inside space-y-2 text-gray-700">
                     <li><strong>openFDA Drug Shortages API</strong> - Primary shortage data including status, manufacturers, reasons, and timelines</li>
                     <li><strong>FDA Drug Labels</strong> - Detailed drug information, indications, warnings, and contraindications</li>
+                    <li><strong>FDA DRLS (Drug Registration and Listing System)</strong> - Complete registry of 6,747 pharmaceutical manufacturers</li>
+                    <li><strong>Google Maps Geocoding API</strong> - Converting manufacturer addresses to geographic coordinates</li>
                     <li><strong>PubMed</strong> - Peer-reviewed medical literature and research articles</li>
                     <li><strong>Health.gov</strong> - Evidence-based health guidelines and patient information</li>
                     <li><strong>ClinicalTrials.gov</strong> - Active and completed clinical trials</li>
@@ -67,9 +70,19 @@
                     </div>
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h4 class="font-semibold text-gray-900 mb-2">🗺️ Geographic Distribution</h4>
-                        <p class="text-sm text-gray-600">Map shortages by manufacturer location to understand regional impacts</p>
+                        <p class="text-sm text-gray-600">Interactive maps showing active shortages and global manufacturer risk analysis with 1,500+ geocoded facilities</p>
                     </div>
                 </div>
+            </section>
+
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">Geographic Capabilities</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><strong>Shortage Map:</strong> Active drug shortages mapped by manufacturer location with detailed shortage information</li>
+                    <li><strong>All Manufacturers Map:</strong> Complete FDA registry of 6,747 manufacturers with 1,500+ geocoded locations for supply chain risk analysis</li>
+                    <li><strong>Regional Breakdown:</strong> Shortages organized by City, State for easy regional analysis</li>
+                </ul>
             </section>
 
             <section class="mb-8">
@@ -78,13 +91,14 @@
                     <li><strong>Shortage Data:</strong> Cached for 6 hours (shortages update frequently)</li>
                     <li><strong>Enrichment Data:</strong> Cached for 24 hours (relatively stable)</li>
                     <li><strong>Analytics:</strong> Cached for 1 hour (computed from shortages)</li>
+                    <li><strong>Historical Snapshots:</strong> Automated daily snapshots at midnight for trend analysis over time</li>
                 </ul>
             </section>
 
             <section class="mb-8">
                 <h3 class="text-xl font-semibold text-gray-900 mb-3">Limitations</h3>
                 <ul class="list-disc list-inside space-y-2 text-gray-700">
-                    <li>Geographic data is parsed from manufacturer contact information (MVP implementation)</li>
+                    <li>1,500 of 6,747 manufacturers currently geocoded (expanding coverage ongoing)</li>
                     <li>Alternative drug suggestions are based on therapeutic category matching</li>
                     <li>Data is as current as the openFDA API (typically updated daily)</li>
                     <li>Some enrichment data may not be available for all drugs</li>
@@ -95,8 +109,9 @@
                 <h3 class="text-xl font-semibold text-gray-900 mb-3">Technology Stack</h3>
                 <p class="text-gray-700 mb-3">
                     <strong>Backend:</strong> Node.js, Express, Model Context Protocol (MCP) tools<br>
-                    <strong>Frontend:</strong> HTML5, JavaScript (ES6+), Tailwind CSS<br>
-                    <strong>APIs:</strong> openFDA, PubMed E-utilities, ClinicalTrials.gov, Health.gov v4
+                    <strong>Frontend:</strong> HTML5, JavaScript (ES6+), Tailwind CSS, Leaflet.js for interactive maps<br>
+                    <strong>Database:</strong> SQLite with automated daily snapshots for historical trend analysis<br>
+                    <strong>APIs:</strong> openFDA, PubMed E-utilities, ClinicalTrials.gov, Health.gov v4, Google Maps Geocoding API
                 </p>
                 <p class="text-sm text-gray-600">
                     Open source project: <a href="https://github.com/Jerempire/healthcare-mcp-public" class="text-blue-600 hover:underline" target="_blank">healthcare-mcp-public</a>

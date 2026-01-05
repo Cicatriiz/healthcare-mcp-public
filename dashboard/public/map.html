@@ -29,7 +29,8 @@
                     <a href="index.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Shortages</a>
                     <a href="analytics.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Analytics</a>
                     <a href="trends.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Trends</a>
-                    <a href="map.html" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium">Map</a>
+                    <a href="map.html" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium">Shortage Map</a>
+                    <a href="manufacturers-map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">All Manufacturers</a>
                     <a href="about.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">About</a>
                 </nav>
             </div>
@@ -181,6 +182,13 @@
 
                     // Show content
                     mapContainer.classList.remove('hidden');
+
+                    // Fix map rendering after container becomes visible
+                    setTimeout(() => {
+                        if (map) {
+                            map.invalidateSize();
+                        }
+                    }, 100);
                 } else {
                     throw new Error(result.error_message || 'Failed to load geographic data');
                 }
@@ -224,15 +232,25 @@
                         fillOpacity: 0.7
                     }).addTo(map);
 
-                    // Create popup content
+                    // Create popup content with shortage details
                     const popupContent = `
-                        <div class="p-2">
-                            <h3 class="font-semibold text-gray-900">${region.region || 'Unknown Region'}</h3>
-                            ${region.state ? `<p class="text-sm text-gray-600">State: ${region.state}</p>` : ''}
-                            ${region.country ? `<p class="text-sm text-gray-600">Country: ${region.country}</p>` : ''}
-                            <p class="text-sm font-medium text-red-600 mt-1">Shortages: ${region.count}</p>
+                        <div class="p-2 max-w-sm">
+                            <h3 class="font-semibold text-gray-900 mb-1">${region.city ? region.city + ', ' : ''}${region.state || region.country || 'Unknown Region'}</h3>
+                            ${region.country ? `<p class="text-xs text-gray-500">${region.country}</p>` : ''}
+                            <p class="text-sm font-medium text-red-600 mt-2">🚨 ${region.count} Active Shortage${region.count > 1 ? 's' : ''}</p>
                             ${region.manufacturers && region.manufacturers.length > 0 ? `
-                                <p class="text-xs text-gray-500 mt-1">Manufacturers: ${region.manufacturers.slice(0, 3).join(', ')}${region.manufacturers.length > 3 ? '...' : ''}</p>
+                                <p class="text-xs text-gray-600 mt-2"><strong>Manufacturers:</strong> ${region.manufacturers.slice(0, 2).join(', ')}${region.manufacturers.length > 2 ? ` +${region.manufacturers.length - 2} more` : ''}</p>
+                            ` : ''}
+                            ${region.shortages && region.shortages.length > 0 ? `
+                                <div class="mt-2 border-t pt-2">
+                                    <p class="text-xs font-semibold text-gray-700 mb-1">Affected Drugs:</p>
+                                    <ul class="text-xs text-gray-600 space-y-1">
+                                        ${region.shortages.slice(0, 5).map(s => `
+                                            <li class="truncate">• ${s.generic_name || 'Unknown Drug'}${s.reason ? ` <span class="text-gray-400">(${s.reason})</span>` : ''}</li>
+                                        `).join('')}
+                                        ${region.shortages.length > 5 ? `<li class="text-gray-500 italic">+${region.shortages.length - 5} more drugs</li>` : ''}
+                                    </ul>
+                                </div>
                             ` : ''}
                         </div>
                     `;

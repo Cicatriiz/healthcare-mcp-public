@@ -5,7 +5,7 @@
  * analytics, enrichment, and aggregation across multiple MCP tools.
  */
 export class ShortageService {
-  constructor(mcpTools, cacheService, historyService = null, rxnormService = null, dailymedService = null, adverseEventsService = null, enforcementService = null) {
+  constructor(mcpTools, cacheService, historyService = null, rxnormService = null, dailymedService = null, adverseEventsService = null, enforcementService = null, manufacturerLocationService = null) {
     this.fdaShortage = mcpTools.fdaShortage;
     this.fdaDrug = mcpTools.fdaDrug;
     this.pubmed = mcpTools.pubmed;
@@ -20,6 +20,7 @@ export class ShortageService {
     this.dailymed = dailymedService;
     this.adverseEvents = adverseEventsService;
     this.enforcement = enforcementService;
+    this.manufacturerLocation = manufacturerLocationService;
 
     // US State coordinates for geocoding
     this.US_STATE_COORDS = {
@@ -551,6 +552,45 @@ export class ShortageService {
    * Get geographic distribution of shortages by manufacturer location
    * MVP implementation - parses from contact_info, no actual geocoding yet
    */
+  /**
+   * Normalize manufacturer name for fuzzy matching
+   * Removes common legal suffixes and normalizes case/whitespace
+   */
+  normalizeManufacturerName(name) {
+    if (!name) {
+      return '';
+    }
+
+    let normalized = name.toLowerCase();
+
+    // Remove common legal suffixes
+    const suffixes = [
+      /\s+inc\.?$/i,
+      /\s+llc\.?$/i,
+      /\s+ltd\.?$/i,
+      /\s+corp\.?$/i,
+      /\s+corporation$/i,
+      /\s+company$/i,
+      /\s+co\.?$/i,
+      /\s+limited$/i,
+      /\s+incorporated$/i,
+      /\s+plc\.?$/i,
+      /\s+gmbh$/i,
+      /\s+sa$/i,
+      /\s+nv$/i,
+      /\s+bv$/i
+    ];
+
+    for (const suffix of suffixes) {
+      normalized = normalized.replace(suffix, '');
+    }
+
+    // Remove extra whitespace and trim
+    normalized = normalized.replace(/\s+/g, ' ').trim();
+
+    return normalized;
+  }
+
   async getGeographicDistribution() {
     const cacheKey = this.cache.getCacheKey('shortage_geographic');
 
@@ -560,6 +600,32 @@ export class ShortageService {
     }
 
     try {
+      // Check if manufacturer location service is available
+      if (!this.manufacturerLocation) {
+        return {
+          status: 'error',
+          error_message: 'Manufacturer location service not initialized'
+        };
+      }
+
+      // Load manufacturer data if not already loaded
+      if (this.manufacturerLocation.manufacturers.size === 0) {
+        await this.manufacturerLocation.loadManufacturerData();
+      }
+
+      // Get all geocoded manufacturers
+      const allManufacturers = this.manufacturerLocation.getAllManufacturers();
+
+      // Create a normalized name lookup map for fuzzy matching
+      const manufacturerLookup = new Map();
+      allManufacturers.forEach(mfg => {
+        const normalizedName = this.normalizeManufacturerName(mfg.name);
+        if (!manufacturerLookup.has(normalizedName)) {
+          manufacturerLookup.set(normalizedName, []);
+        }
+        manufacturerLookup.get(normalizedName).push(mfg);
+      });
+
       // Fetch ALL shortages using pagination for complete geographic data
       const result = await this.fdaShortage.fetchAllShortages();
 
@@ -569,58 +635,98 @@ export class ShortageService {
 
       // Filter for active shortages only
       const shortages = result.shortages.filter(s => s.status === 'active');
-      const byRegion = {};
 
-      // DEBUG: Sample contact_info to understand data format
-      const debugSamples = shortages.slice(0, 10).map(s => ({
-        drug: s.generic_name,
-        manufacturer: s.manufacturer,
-        contact_info: s.contact_info || 'NULL'
-      }));
+      // Group shortages by location (lat/lng)
+      const byLocation = {};
+      let matchedCount = 0;
+      let unmatchedCount = 0;
 
       shortages.forEach(shortage => {
-        const geoInfo = this.parseGeographicInfo(shortage.contact_info);
+        const normalizedShortageManufacturer = this.normalizeManufacturerName(shortage.manufacturer);
 
-        if (geoInfo) {
-          const region = geoInfo.state || geoInfo.country;
-          const coords = geoInfo.state ? this.US_STATE_COORDS[geoInfo.state] : null;
+        // Try to find matching manufacturer in geocoded data
+        let matchedManufacturer = null;
 
-          if (!byRegion[region]) {
-            byRegion[region] = {
-              region,
-              state: geoInfo.state,
-              country: geoInfo.country,
-              latitude: coords ? coords[0] : null,
-              longitude: coords ? coords[1] : null,
+        if (manufacturerLookup.has(normalizedShortageManufacturer)) {
+          // Exact match after normalization
+          const matches = manufacturerLookup.get(normalizedShortageManufacturer);
+          matchedManufacturer = matches[0]; // Take the first match
+        } else {
+          // Try partial matching
+          for (const [normalizedName, manufacturers] of manufacturerLookup.entries()) {
+            if (normalizedName.includes(normalizedShortageManufacturer) ||
+                normalizedShortageManufacturer.includes(normalizedName)) {
+              matchedManufacturer = manufacturers[0];
+              break;
+            }
+          }
+        }
+
+        if (matchedManufacturer && matchedManufacturer.latitude && matchedManufacturer.longitude) {
+          // Only include if we have valid coordinates
+          matchedCount++;
+
+          const locationKey = `${matchedManufacturer.latitude},${matchedManufacturer.longitude}`;
+
+          if (!byLocation[locationKey]) {
+            // Format region as "City, State" or fallback to available data
+            let region = 'Unknown';
+            if (matchedManufacturer.city && matchedManufacturer.state) {
+              region = `${matchedManufacturer.city}, ${matchedManufacturer.state}`;
+            } else if (matchedManufacturer.city && matchedManufacturer.country) {
+              region = `${matchedManufacturer.city}, ${matchedManufacturer.country}`;
+            } else if (matchedManufacturer.city) {
+              region = matchedManufacturer.city;
+            } else if (matchedManufacturer.state) {
+              region = matchedManufacturer.state;
+            } else if (matchedManufacturer.country) {
+              region = matchedManufacturer.country;
+            }
+
+            byLocation[locationKey] = {
+              latitude: matchedManufacturer.latitude,
+              longitude: matchedManufacturer.longitude,
+              city: matchedManufacturer.city,
+              state: matchedManufacturer.state,
+              country: matchedManufacturer.country,
+              region: region,
               count: 0,
               manufacturers: new Set(),
               shortages: []
             };
           }
 
-          byRegion[region].count++;
-          byRegion[region].manufacturers.add(shortage.manufacturer);
-          byRegion[region].shortages.push({
+          byLocation[locationKey].count++;
+          byLocation[locationKey].manufacturers.add(shortage.manufacturer);
+          byLocation[locationKey].shortages.push({
             ndc: shortage.ndc,
             generic_name: shortage.generic_name,
-            manufacturer: shortage.manufacturer
+            manufacturer: shortage.manufacturer,
+            reason: shortage.reason || 'Unknown'
           });
+        } else {
+          unmatchedCount++;
         }
       });
 
-      // Convert manufacturers Set to array
-      const distribution = Object.values(byRegion).map(region => ({
-        ...region,
-        manufacturers: Array.from(region.manufacturers),
-        manufacturer_count: region.manufacturers.length
+      // Convert to array and clean up
+      const distribution = Object.values(byLocation).map(location => ({
+        ...location,
+        manufacturers: Array.from(location.manufacturers),
+        manufacturer_count: location.manufacturers.length
       })).sort((a, b) => b.count - a.count);
 
       const response = {
         status: 'success',
         distribution,
-        total_regions: distribution.length,
-        debug_contact_samples: debugSamples, // DEBUG: Show sample contact_info
-        note: 'MVP implementation - geographic data parsed from contact_info field. Future enhancement will use proper geocoding API.'
+        total_locations: distribution.length,
+        statistics: {
+          total_shortages: shortages.length,
+          matched_shortages: matchedCount,
+          unmatched_shortages: unmatchedCount,
+          match_rate: shortages.length > 0 ? ((matchedCount / shortages.length) * 100).toFixed(2) + '%' : '0%'
+        },
+        note: 'Geographic distribution using geocoded manufacturer data with fuzzy name matching'
       };
 
       this.cache.set(cacheKey, response, 3600);
