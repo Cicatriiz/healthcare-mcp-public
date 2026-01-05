@@ -550,8 +550,8 @@
                 const data = await api.getDailyMedInfo(ndc);
                 console.log('[DailyMed] Response:', data);
 
-                if (data.status === 'success' && data.images) {
-                    console.log('[DailyMed] Rendering data - Product images:', data.images.product_images?.length, 'Package images:', data.images.package_images?.length);
+                if (data.status === 'success') {
+                    console.log('[DailyMed] Rendering data - Product images:', data.images?.product_images?.length || 0, 'Package images:', data.images?.package_images?.length || 0);
                     renderDailyMedData(data);
                     loading.classList.add('hidden');
                     content.classList.remove('hidden');
@@ -570,7 +570,7 @@
         function renderDailyMedData(data) {
             // Render product images
             const productImagesList = document.getElementById('product-images-list');
-            if (data.images.product_images && data.images.product_images.length > 0) {
+            if (data.images?.product_images && data.images.product_images.length > 0) {
                 productImagesList.innerHTML = data.images.product_images.map(img => `
                     <img src="${img.url}" alt="${escapeHtml(img.name)}" class="w-full rounded border border-gray-200" />
                 `).join('');
@@ -580,7 +580,7 @@
 
             // Render package images
             const packageImagesList = document.getElementById('package-images-list');
-            if (data.images.package_images && data.images.package_images.length > 0) {
+            if (data.images?.package_images && data.images.package_images.length > 0) {
                 packageImagesList.innerHTML = data.images.package_images.map(img => `
                     <img src="${img.url}" alt="${escapeHtml(img.name)}" class="w-full rounded border border-gray-200" />
                 `).join('');
