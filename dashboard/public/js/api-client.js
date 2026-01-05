@@ -161,13 +161,6 @@ class DashboardAPI {
     }
 
     /**
-     * Get adverse events summary for a shortage drug
-     */
-    async getAdverseEvents(ndc) {
-        return this.request('/adverse-events', { ndc });
-    }
-
-    /**
      * Get recalls information for a shortage drug
      */
     async getRecalls(ndc) {

@@ -190,32 +190,6 @@
                 </div>
             </div>
 
-            <!-- Safety Alerts (Adverse Events) -->
-            <div id="safety-section" class="hidden bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-6 mt-6">
-                <h3 class="text-xl font-semibold text-gray-900 mb-2">⚠️ Safety Signals & Adverse Events</h3>
-                <p class="text-sm text-gray-600 mb-4">Post-marketing adverse event reports (via FDA FAERS)</p>
-
-                <div id="safety-loading" class="flex items-center justify-center py-8">
-                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-                    <span class="ml-3 text-red-800">Loading safety data...</span>
-                </div>
-
-                <div id="safety-content" class="hidden">
-                    <div class="bg-white rounded-lg p-4 mb-4">
-                        <h4 class="font-semibold text-gray-900 mb-3">Top Reported Reactions</h4>
-                        <div id="top-reactions-list" class="space-y-2"></div>
-                    </div>
-                    <div class="bg-white rounded-lg p-4">
-                        <h4 class="font-semibold text-gray-900 mb-3">Recent Serious Events</h4>
-                        <div id="serious-events-list" class="space-y-2"></div>
-                    </div>
-                </div>
-
-                <div id="safety-error" class="hidden bg-yellow-50 border border-yellow-200 rounded p-4">
-                    <p class="text-sm text-yellow-800">No adverse event data available for this drug.</p>
-                </div>
-            </div>
-
             <!-- Recalls & Enforcement Actions -->
             <div id="recalls-section" class="hidden bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-lg p-6 mt-6">
                 <h3 class="text-xl font-semibold text-gray-900 mb-2">🚨 Recalls & Enforcement Actions</h3>
@@ -301,7 +275,7 @@
                     loadDailyMedData(ndc);
 
                     // Load adverse events data
-                    loadAdverseEventsData(ndc);
+                    // loadAdverseEventsData(ndc); // DISABLED - not showing data
 
                     // Load recalls data
                     loadRecallsData(ndc);
@@ -619,67 +593,6 @@
                     <p><strong>Published:</strong> ${data.label.published_date || 'N/A'}</p>
                     ${data.spl_url ? `<p class="mt-2"><a href="${data.spl_url}" target="_blank" class="text-blue-600 hover:underline">View Full Label on DailyMed →</a></p>` : ''}
                 `;
-            }
-        }
-
-        // Load adverse events data
-        async function loadAdverseEventsData(ndc) {
-            const section = document.getElementById('safety-section');
-            const loading = document.getElementById('safety-loading');
-            const content = document.getElementById('safety-content');
-            const error = document.getElementById('safety-error');
-
-            section.classList.remove('hidden');
-            loading.classList.remove('hidden');
-            content.classList.add('hidden');
-            error.classList.add('hidden');
-
-            try {
-                const data = await api.getAdverseEvents(ndc);
-
-                if (data.status === 'success' && data.has_safety_data) {
-                    renderAdverseEventsData(data);
-                    loading.classList.add('hidden');
-                    content.classList.remove('hidden');
-                } else {
-                    loading.classList.add('hidden');
-                    error.classList.remove('hidden');
-                }
-            } catch (err) {
-                console.error('Error loading adverse events:', err);
-                loading.classList.add('hidden');
-                error.classList.remove('hidden');
-            }
-        }
-
-        function renderAdverseEventsData(data) {
-            // Render top reactions
-            const topReactionsList = document.getElementById('top-reactions-list');
-            if (data.statistics && data.statistics.top_reactions && data.statistics.top_reactions.length > 0) {
-                topReactionsList.innerHTML = data.statistics.top_reactions.slice(0, 10).map(reaction => `
-                    <div class="flex items-center justify-between border-b border-gray-100 pb-2">
-                        <span class="text-sm text-gray-900">${escapeHtml(reaction.reaction)}</span>
-                        <span class="text-sm font-semibold text-red-600">${reaction.count} reports</span>
-                    </div>
-                `).join('');
-            } else {
-                topReactionsList.innerHTML = '<p class="text-sm text-gray-500">No reaction data available</p>';
-            }
-
-            // Render serious events
-            const seriousEventsList = document.getElementById('serious-events-list');
-            if (data.recent_serious_events && data.recent_serious_events.events && data.recent_serious_events.events.length > 0) {
-                seriousEventsList.innerHTML = data.recent_serious_events.events.slice(0, 5).map(event => `
-                    <div class="border border-red-200 rounded-lg p-3 bg-red-50">
-                        <div class="text-sm font-semibold text-red-900">${event.reactions?.map(r => r.reaction).join(', ') || 'Unknown reaction'}</div>
-                        <div class="text-xs text-gray-600 mt-1">
-                            ${event.serious_outcomes?.join(', ') || 'Serious outcome'}
-                        </div>
-                        <div class="text-xs text-gray-500 mt-1">Reported: ${event.receive_date || 'Unknown date'}</div>
-                    </div>
-                `).join('');
-            } else {
-                seriousEventsList.innerHTML = '<p class="text-sm text-gray-500">No recent serious events</p>';
             }
         }
 
