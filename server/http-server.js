@@ -270,7 +270,8 @@ const server = http.createServer(async (req, res) => {
         const params = {
           status: url.searchParams.get('status') || 'all',
           therapeutic_category: url.searchParams.get('therapeutic_category') || undefined,
-          manufacturer: url.searchParams.get('manufacturer') || undefined,
+          dosage_form: url.searchParams.get('dosage_form') || undefined,
+          company_name: url.searchParams.get('manufacturer') || undefined,
           query: url.searchParams.get('query') || undefined,
           limit,
           skip
