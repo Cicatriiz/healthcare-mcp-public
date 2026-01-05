@@ -1479,11 +1479,14 @@ export class ShortageService {
 
     try {
       const ndc = shortage.ndc;
-      if (!ndc) {
-        return { status: 'error', message: 'No NDC available for DailyMed lookup' };
+      const drugName = shortage.generic_name || shortage.brand_name;
+
+      if (!ndc && !drugName) {
+        return { status: 'error', message: 'No NDC or drug name available for DailyMed lookup' };
       }
 
-      const result = await this.dailymed.getDrugInfo(ndc);
+      // Pass both NDC and drug name (drug name used as fallback)
+      const result = await this.dailymed.getDrugInfo(ndc || 'unknown', drugName);
       return result;
     } catch (error) {
       console.error('[ShortageService] Error fetching DailyMed info:', error);

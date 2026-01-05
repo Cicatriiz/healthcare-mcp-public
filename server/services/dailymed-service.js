@@ -262,15 +262,47 @@ export class DailyMedService {
      * @param {string} ndc - National Drug Code
      * @returns {Promise<Object>} Complete drug information with images
      */
-    async getDrugInfo(ndc) {
+    async getDrugInfo(ndc, drugName = null) {
         try {
-            // Get label by NDC
+            // Try to get label by NDC first
             const labelResult = await this.getLabelByNDC(ndc);
+
+            // If NDC lookup fails and we have a drug name, try searching by name
+            if ((labelResult.status === 'error' || !labelResult.labels || labelResult.labels.length === 0) && drugName) {
+                console.log(`NDC lookup failed for ${ndc}, trying drug name: ${drugName}`);
+                const nameResult = await this.searchByDrugName(drugName);
+
+                if (nameResult.status === 'success' && nameResult.labels && nameResult.labels.length > 0) {
+                    // Use the name search results instead
+                    const label = nameResult.labels[0];
+                    const setid = label.setid;
+                    const mediaResult = await this.getMediaBySetID(setid);
+
+                    return {
+                        status: 'success',
+                        ndc: ndc,
+                        lookup_method: 'drug_name',
+                        label: {
+                            setid: label.setid,
+                            title: label.title,
+                            published_date: label.published_date,
+                            marketing_category: label.marketing_category,
+                            application_number: label.application_number,
+                            labeler: label.labeler
+                        },
+                        images: mediaResult.status === 'success' ? {
+                            product_images: mediaResult.product_images || [],
+                            package_images: mediaResult.package_images || []
+                        } : null,
+                        spl_url: `https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=${setid}`
+                    };
+                }
+            }
 
             if (labelResult.status === 'error' || !labelResult.labels || labelResult.labels.length === 0) {
                 return {
                     status: 'not_found',
-                    message: 'No DailyMed data found for this NDC'
+                    message: 'No DailyMed data found for this NDC or drug name'
                 };
             }
 
