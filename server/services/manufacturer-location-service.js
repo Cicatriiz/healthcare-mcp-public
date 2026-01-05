@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fetch from 'node-fetch';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,6 +14,8 @@ const __dirname = path.dirname(__filename);
  *
  * Data source: FDA DRLS (Drug Registration and Listing System)
  * File: drls_reg.xls
+ *
+ * Geocoding: Uses Google Maps API if available, falls back to OpenStreetMap
  */
 export class ManufacturerLocationService {
     constructor(cacheService = null) {
@@ -20,6 +23,13 @@ export class ManufacturerLocationService {
         this.manufacturers = new Map();
         this.geocodeCache = new Map();
         this.dataFile = path.join(__dirname, '../../drls_reg.xls');
+        this.googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY || null;
+
+        if (this.googleMapsApiKey) {
+            console.log('[ManufacturerLocation] Using Google Maps API for geocoding');
+        } else {
+            console.log('[ManufacturerLocation] Using OpenStreetMap for geocoding (Google Maps API key not configured)');
+        }
     }
 
     /**
@@ -66,7 +76,7 @@ export class ManufacturerLocationService {
 
     /**
      * Geocode an address to latitude/longitude
-     * Uses OpenStreetMap Nominatim (free, no API key required)
+     * Uses Google Maps API if available, falls back to OpenStreetMap
      *
      * @param {Object} address - Address components
      * @returns {Promise<Object>} Coordinates {lat, lng}
@@ -80,8 +90,62 @@ export class ManufacturerLocationService {
             return this.geocodeCache.get(cacheKey);
         }
 
+        // Try Google Maps first if API key is available
+        if (this.googleMapsApiKey) {
+            const googleResult = await this.geocodeWithGoogleMaps(addressString);
+            if (googleResult) {
+                this.geocodeCache.set(cacheKey, googleResult);
+                return googleResult;
+            }
+        }
+
+        // Fall back to OpenStreetMap
+        const osmResult = await this.geocodeWithOSM(addressString);
+        if (osmResult) {
+            this.geocodeCache.set(cacheKey, osmResult);
+            return osmResult;
+        }
+
+        return null;
+    }
+
+    /**
+     * Geocode using Google Maps Geocoding API
+     */
+    async geocodeWithGoogleMaps(addressString) {
         try {
-            // Use OpenStreetMap Nominatim for free geocoding
+            const query = encodeURIComponent(addressString);
+            const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&key=${this.googleMapsApiKey}`;
+
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.status === 'OK' && data.results && data.results.length > 0) {
+                const location = data.results[0].geometry.location;
+                return {
+                    lat: location.lat,
+                    lng: location.lng,
+                    display_name: data.results[0].formatted_address,
+                    source: 'google_maps'
+                };
+            }
+
+            if (data.status === 'OVER_QUERY_LIMIT') {
+                console.warn('[ManufacturerLocation] Google Maps API quota exceeded, falling back to OSM');
+            }
+
+            return null;
+        } catch (error) {
+            console.error(`[ManufacturerLocation] Google Maps geocoding error: ${error.message}`);
+            return null;
+        }
+    }
+
+    /**
+     * Geocode using OpenStreetMap Nominatim (free fallback)
+     */
+    async geocodeWithOSM(addressString) {
+        try {
             const query = encodeURIComponent(addressString);
             const url = `https://nominatim.openstreetmap.org/search?q=${query}&format=json&limit=1`;
 
@@ -94,19 +158,17 @@ export class ManufacturerLocationService {
             const data = await response.json();
 
             if (data && data.length > 0) {
-                const result = {
+                return {
                     lat: parseFloat(data[0].lat),
                     lng: parseFloat(data[0].lon),
-                    display_name: data[0].display_name
+                    display_name: data[0].display_name,
+                    source: 'openstreetmap'
                 };
-
-                this.geocodeCache.set(cacheKey, result);
-                return result;
             }
 
             return null;
         } catch (error) {
-            console.error(`[ManufacturerLocation] Geocoding error for ${addressString}: ${error.message}`);
+            console.error(`[ManufacturerLocation] OSM geocoding error: ${error.message}`);
             return null;
         }
     }
