@@ -53,3 +53,7 @@ Thumbs.db
 /src/private/
 payments_config.json
 stripe_keys.json
+
+# Data files (can be regenerated)
+drls_reg.xls
+data/manufacturers.json
