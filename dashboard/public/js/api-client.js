@@ -174,6 +174,34 @@ class DashboardAPI {
     async getEnrichedData(ndc) {
         return this.request('/enriched', { ndc });
     }
+
+    /**
+     * Get manufacturer location by name
+     */
+    async getManufacturerLocation(manufacturerName) {
+        return this.request('/manufacturer-location', { name: manufacturerName });
+    }
+
+    /**
+     * Get all manufacturer locations
+     */
+    async getAllManufacturerLocations() {
+        return this.request('/manufacturer-locations');
+    }
+
+    /**
+     * Get manufacturers by state
+     */
+    async getManufacturersByState(state) {
+        return this.request('/manufacturers-by-state', { state });
+    }
+
+    /**
+     * Get shortages enriched with manufacturer location data
+     */
+    async getShortagesWithLocations(filters = {}) {
+        return this.request('/shortages-with-locations', filters);
+    }
 }
 
 // Create global API instance

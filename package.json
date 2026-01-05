@@ -29,7 +29,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
     "node-cache": "^5.1.2",
-    "node-fetch": "^3.3.2",
     "sqlite3": "^5.1.6",
     "xlsx": "^0.18.5"
   },

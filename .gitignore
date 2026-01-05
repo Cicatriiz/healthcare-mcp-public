@@ -54,6 +54,7 @@ Thumbs.db
 payments_config.json
 stripe_keys.json
 
-# Data files (can be regenerated)
+# Large FDA data files (users must download separately)
 drls_reg.xls
+drls_reg.xlsx
 data/manufacturers.json
