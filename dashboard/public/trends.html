@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trends - FDA Drug Shortage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">FDA Drug Shortage Intelligence Dashboard</h1>
+                    <p class="text-sm text-gray-600 mt-1">Temporal Trends & Insights</p>
+                </div>
+                <nav class="flex space-x-4">
+                    <a href="index.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Shortages</a>
+                    <a href="analytics.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Analytics</a>
+                    <a href="trends.html" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium">Trends</a>
+                    <a href="map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Map</a>
+                    <a href="about.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">About</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-600">Loading trend analysis...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
+            <div class="text-red-600 text-lg font-semibold mb-2">Error Loading Trends</div>
+            <div id="error-message" class="text-red-800"></div>
+        </div>
+
+        <!-- Content -->
+        <div id="content" class="hidden">
+            <!-- Key Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="text-sm font-medium text-gray-600">Average Duration</div>
+                    <div class="mt-2 text-3xl font-bold text-blue-600" id="avg-duration">-</div>
+                    <div class="text-sm text-gray-500">days to resolution</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="text-sm font-medium text-gray-600">Long-Running Active</div>
+                    <div class="mt-2 text-3xl font-bold text-red-600" id="long-running-count">-</div>
+                    <div class="text-sm text-gray-500">90+ days</div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <div class="text-sm font-medium text-gray-600">Longest Active</div>
+                    <div class="mt-2 text-3xl font-bold text-orange-600" id="longest-active">-</div>
+                    <div class="text-sm text-gray-500">days</div>
+                </div>
+            </div>
+
+            <!-- Key Insights -->
+            <div id="insights-section" class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">📊 Key Insights</h2>
+                <div id="insights-content" class="space-y-2 text-sm text-gray-700">
+                    <!-- Insights will be populated here -->
+                </div>
+            </div>
+
+            <!-- Timeline Chart -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Monthly Shortage Trends</h2>
+                <p class="text-sm text-gray-600 mb-4">Showing last 24 months of shortage activity</p>
+                <div class="relative" style="height: 300px;">
+                    <canvas id="timeline-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Duration by Category -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Average Duration by Therapeutic Category (Top 10)</h2>
+                <p class="text-sm text-gray-600 mb-4">Hover over bars to see shortage counts</p>
+                <div class="relative" style="height: 400px;">
+                    <canvas id="duration-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Manufacturer Risk Analysis -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">🏭 Manufacturer Risk Analysis</h2>
+                <p class="text-sm text-gray-600 mb-4">Top 10 manufacturers by active shortage count</p>
+                <div class="relative" style="height: 400px;">
+                    <canvas id="manufacturer-risk-chart"></canvas>
+                </div>
+            </div>
+
+
+
+            <!-- Shortage Root Causes -->
+            <div id="shortage-reasons-section" class="mt-8">
+                <div class="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6 mb-6">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-2">🔍 Shortage Root Cause Analysis</h2>
+                    <p class="text-sm text-gray-700">Understanding why drug shortages occur - categorized by manufacturing, demand, regulatory, and business factors</p>
+                </div>
+
+                <!-- Reasons Loading State -->
+                <div id="reasons-loading" class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <p class="mt-2 text-sm text-gray-600">Analyzing shortage reasons...</p>
+                </div>
+
+                <!-- Reasons Error State -->
+                <div id="reasons-error" class="hidden bg-red-50 border-l-4 border-red-400 rounded-lg p-6 mb-6">
+                    <div class="flex items-start">
+                        <span class="text-2xl mr-3">⚠️</span>
+                        <div>
+                            <h4 class="text-red-900 font-semibold mb-2">Shortage Reasons Analysis Unavailable</h4>
+                            <p class="text-red-800 text-sm" id="reasons-error-message"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reasons Content -->
+                <div id="reasons-content" class="hidden space-y-6">
+                    <!-- Key Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Active Shortages</div>
+                            <div class="mt-2 text-3xl font-bold text-purple-600" id="reasons-total">-</div>
+                            <div class="text-sm text-gray-500">analyzed</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Categorized</div>
+                            <div class="mt-2 text-3xl font-bold text-green-600" id="reasons-categorized">-</div>
+                            <div class="text-sm text-gray-500">with known reasons</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Top Cause</div>
+                            <div class="mt-2 text-lg font-bold text-blue-600" id="reasons-top-cause">-</div>
+                            <div class="text-sm text-gray-500" id="reasons-top-count">-</div>
+                        </div>
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <div class="text-sm font-medium text-gray-600">Discontinued</div>
+                            <div class="mt-2 text-3xl font-bold text-orange-600" id="reasons-discontinued">-</div>
+                            <div class="text-sm text-gray-500">products removed</div>
+                        </div>
+                    </div>
+
+                    <!-- Key Insights -->
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-3">💡 Root Cause Insights</h3>
+                        <div id="reasons-insights-content" class="space-y-2 text-sm">
+                            <!-- Insights will be populated here -->
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Pie Chart -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h3 class="text-md font-semibold text-gray-900 mb-4">📊 Shortage Categories Distribution</h3>
+                            <div class="relative" style="height: 300px;">
+                                <canvas id="reasons-pie-chart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Bar Chart -->
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                            <h3 class="text-md font-semibold text-gray-900 mb-4">📈 Shortage Count by Category</h3>
+                            <div class="relative" style="height: 300px;">
+                                <canvas id="reasons-bar-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/api-client.js"></script>
+    <script>
+        let timelineChart;
+        let durationChart;
+        let manufacturerRiskChart;
+        let reasonsPieChart;
+        let reasonsBarChart;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTrends();
+            loadShortageReasons();
+        });
+
+        async function loadTrends() {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const content = document.getElementById('content');
+
+            try {
+                loading.classList.remove('hidden');
+                error.classList.add('hidden');
+
+                const result = await api.request('/trends');
+
+                if (result.status === 'success') {
+                    const trends = result.trends;
+
+                    // Update metrics
+                    document.getElementById('avg-duration').textContent = trends.average_duration_days || 0;
+                    document.getElementById('long-running-count').textContent = trends.long_running_active.length;
+                    document.getElementById('longest-active').textContent =
+                        trends.long_running_active.length > 0 ? trends.long_running_active[0].days_since_start : 0;
+
+                    // Render charts
+                    renderTimelineChart(trends.monthly);
+                    renderDurationChart(trends.avg_duration_by_category);
+                    renderManufacturerRiskChart(trends.manufacturer_risk);
+
+
+                    // Render insights
+                    renderInsights(trends);
+
+                    content.classList.remove('hidden');
+                } else {
+                    throw new Error(result.error_message || 'Failed to load trends');
+                }
+            } catch (err) {
+                console.error('Error loading trends:', err);
+                document.getElementById('error-message').textContent = err.message;
+                error.classList.remove('hidden');
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        function renderTimelineChart(monthly) {
+            const ctx = document.getElementById('timeline-chart').getContext('2d');
+
+            if (timelineChart) {
+                timelineChart.destroy();
+            }
+
+            timelineChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: monthly.map(d => d.month),
+                    datasets: [
+                        {
+                            label: 'Total Shortages',
+                            data: monthly.map(d => d.total),
+                            borderColor: 'rgb(59, 130, 246)',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Active',
+                            data: monthly.map(d => d.active),
+                            borderColor: 'rgb(220, 38, 38)',
+                            backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        },
+                        {
+                            label: 'Resolved',
+                            data: monthly.map(d => d.resolved),
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            fill: true,
+                            tension: 0.3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Shortages'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderDurationChart(categories) {
+            const ctx = document.getElementById('duration-chart').getContext('2d');
+
+            // Filter out categories with 0 avg duration and limit to top 10
+            const filtered = categories.filter(c => c.avg_duration_days > 0).slice(0, 10);
+
+            if (durationChart) {
+                durationChart.destroy();
+            }
+
+            // Generate distinct colors for each category
+            const colors = [
+                'rgba(220, 38, 38, 0.8)',   // red
+                'rgba(245, 158, 11, 0.8)',  // orange
+                'rgba(59, 130, 246, 0.8)',  // blue
+                'rgba(16, 185, 129, 0.8)',  // green
+                'rgba(147, 51, 234, 0.8)',  // purple
+                'rgba(236, 72, 153, 0.8)',  // pink
+                'rgba(14, 165, 233, 0.8)',  // sky
+                'rgba(34, 197, 94, 0.8)',   // emerald
+                'rgba(251, 146, 60, 0.8)',  // orange-400
+                'rgba(168, 85, 247, 0.8)'   // violet
+            ];
+
+            durationChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: filtered.map(d => d.category),
+                    datasets: [{
+                        label: 'Average Duration (Days)',
+                        data: filtered.map(d => d.avg_duration_days),
+                        backgroundColor: filtered.map((_, i) => colors[i % colors.length]),
+                        borderColor: filtered.map((_, i) => colors[i % colors.length].replace('0.8', '1')),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const category = filtered[context.dataIndex];
+                                    return `${category.shortage_count} shortages`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Average Days'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        function renderManufacturerRiskChart(manufacturers) {
+            const ctx = document.getElementById('manufacturer-risk-chart').getContext('2d');
+
+            const filtered = manufacturers.slice(0, 10);
+
+            if (manufacturerRiskChart) {
+                manufacturerRiskChart.destroy();
+            }
+
+            manufacturerRiskChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: filtered.map(m => m.manufacturer),
+                    datasets: [{
+                        label: 'Active Shortages',
+                        data: filtered.map(m => m.active_shortages),
+                        backgroundColor: 'rgba(220, 38, 38, 0.8)',
+                        borderColor: 'rgba(220, 38, 38, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const mfg = filtered[context.dataIndex];
+                                    const avgResolution = mfg.avg_resolution_days !== null && mfg.avg_resolution_days !== undefined
+                                        ? `${mfg.avg_resolution_days} days`
+                                        : 'N/A (no resolved shortages)';
+                                    return [
+                                        `Long-running: ${mfg.long_running_count}`,
+                                        `Resolution rate: ${mfg.resolution_rate}%`,
+                                        `Avg resolution: ${avgResolution}`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Active Shortages'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderInsights(trends) {
+            const insightsContent = document.getElementById('insights-content');
+            const insights = [];
+
+            // Trend direction
+            if (trends.monthly && trends.monthly.length >= 2) {
+                const recent = trends.monthly.slice(-3);
+                const avgRecent = recent.reduce((sum, m) => sum + m.active, 0) / recent.length;
+                const older = trends.monthly.slice(-6, -3);
+                const avgOlder = older.reduce((sum, m) => sum + m.active, 0) / older.length;
+
+                if (avgRecent > avgOlder * 1.1) {
+                    insights.push(`<strong>⚠️ Trend Alert:</strong> Active shortages are increasing - up ${Math.round(((avgRecent - avgOlder) / avgOlder) * 100)}% compared to previous quarter`);
+                } else if (avgRecent < avgOlder * 0.9) {
+                    insights.push(`<strong>✅ Positive Trend:</strong> Active shortages are decreasing - down ${Math.round(((avgOlder - avgRecent) / avgOlder) * 100)}% compared to previous quarter`);
+                }
+            }
+
+            // Duration insights
+            if (trends.average_duration_days) {
+                insights.push(`<strong>📈 Duration Analysis:</strong> Average shortage duration is ${trends.average_duration_days} days`);
+            }
+
+            // Long-running critical
+            if (trends.long_running_active && trends.long_running_active.length > 0) {
+                const criticalCount = trends.long_running_active.filter(s => s.days_since_start > 365).length;
+                if (criticalCount > 0) {
+                    insights.push(`<strong>🚨 Critical Alert:</strong> ${criticalCount} drugs have been in shortage for over 1 year - requiring immediate attention`);
+                }
+            }
+
+            // Category insights
+            if (trends.avg_duration_by_category && trends.avg_duration_by_category.length > 0) {
+                const topCategory = trends.avg_duration_by_category[0];
+                insights.push(`<strong>🎯 Category Risk:</strong> "${topCategory.category}" has the longest average shortage duration at ${topCategory.avg_duration_days} days (${topCategory.shortage_count} shortages)`);
+            }
+
+            // Summary statistics
+            if (trends.total_shortages) {
+                const activeRate = Math.round((trends.active_shortages / trends.total_shortages) * 100);
+                insights.push(`<strong>📊 Overall Status:</strong> ${activeRate}% of all recorded shortages (${trends.active_shortages} of ${trends.total_shortages}) are currently active`);
+            }
+
+            // Manufacturer risk insights
+            if (trends.manufacturer_risk && trends.manufacturer_risk.length > 0) {
+                const topMfg = trends.manufacturer_risk[0];
+                insights.push(`<strong>🏭 Manufacturer Alert:</strong> ${topMfg.manufacturer} has the most active shortages (${topMfg.active_shortages}) with ${topMfg.long_running_count} long-running issues`);
+            }
+
+            insightsContent.innerHTML = insights.map(i => `<div class="flex items-start"><span class="mr-2">•</span><span>${i}</span></div>`).join('');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function loadShortageReasons() {
+            const reasonsLoading = document.getElementById('reasons-loading');
+            const reasonsError = document.getElementById('reasons-error');
+            const reasonsContent = document.getElementById('reasons-content');
+
+            try {
+                reasonsLoading.classList.remove('hidden');
+                reasonsError.classList.add('hidden');
+
+                const result = await api.getShortageReasons();
+
+                if (result.status === 'success' && result.reasons) {
+                    renderShortageReasons(result.reasons);
+                    reasonsContent.classList.remove('hidden');
+                } else {
+                    throw new Error(result.error_message || 'Failed to load shortage reasons');
+                }
+            } catch (error) {
+                console.error('Error loading shortage reasons:', error);
+                document.getElementById('reasons-error-message').textContent = error.message;
+                reasonsError.classList.remove('hidden');
+            } finally {
+                reasonsLoading.classList.add('hidden');
+            }
+        }
+
+        function renderShortageReasons(reasons) {
+            // Update stats cards
+            document.getElementById('reasons-total').textContent = reasons.total_active_shortages || 0;
+            document.getElementById('reasons-categorized').textContent = reasons.categorized || 0;
+
+            if (reasons.top_reason) {
+                document.getElementById('reasons-top-cause').textContent = reasons.top_reason.category;
+                document.getElementById('reasons-top-count').textContent = `${reasons.top_reason.count} drugs (${reasons.top_reason.percentage}%)`;
+            }
+
+            // Find discontinued count
+            const discontinuedCategory = reasons.summary.find(cat => cat.category.includes('Discontinuation'));
+            document.getElementById('reasons-discontinued').textContent = discontinuedCategory ? discontinuedCategory.count : 0;
+
+            // Render insights
+            const insightsHtml = reasons.insights.map(insight => {
+                return `<div class="flex items-start"><span class="mr-2">•</span><span class="text-gray-700">${insight}</span></div>`;
+            }).join('');
+            document.getElementById('reasons-insights-content').innerHTML = insightsHtml || '<div class="text-gray-600 italic">No specific insights available</div>';
+
+            // Render charts
+            renderReasonsPieChart(reasons.summary);
+            renderReasonsBarChart(reasons.summary);
+        }
+
+        function renderReasonsPieChart(summary) {
+            const ctx = document.getElementById('reasons-pie-chart').getContext('2d');
+
+            if (reasonsPieChart) {
+                reasonsPieChart.destroy();
+            }
+
+            // Filter out categories with 0 count
+            const filtered = summary.filter(cat => cat.count > 0);
+
+            // Color mapping - make discontinuation orange to stand out
+            const colorMap = {
+                'Manufacturing Issues': 'rgba(220, 38, 38, 0.8)',      // red
+                'Increased Demand': 'rgba(59, 130, 246, 0.8)',         // blue
+                'Raw Material Shortage': 'rgba(245, 158, 11, 0.8)',    // amber
+                'Regulatory/Quality Issues': 'rgba(147, 51, 234, 0.8)', // purple
+                'Product Discontinuation': 'rgba(249, 115, 22, 0.9)',  // orange - stands out
+                'Business Decision': 'rgba(16, 185, 129, 0.8)',        // green
+                'Unknown/Not Specified': 'rgba(156, 163, 175, 0.6)'    // gray
+            };
+
+            reasonsPieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: filtered.map(cat => cat.category),
+                    datasets: [{
+                        data: filtered.map(cat => cat.count),
+                        backgroundColor: filtered.map(cat => colorMap[cat.category] || 'rgba(156, 163, 175, 0.8)'),
+                        borderColor: '#fff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 10,
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.parsed || 0;
+                                    const category = filtered[context.dataIndex];
+                                    return [
+                                        `${label}: ${value} drugs`,
+                                        `${category.percentage}% of total`
+                                    ];
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function renderReasonsBarChart(summary) {
+            const ctx = document.getElementById('reasons-bar-chart').getContext('2d');
+
+            if (reasonsBarChart) {
+                reasonsBarChart.destroy();
+            }
+
+            // Filter and sort by count
+            const filtered = summary.filter(cat => cat.count > 0).sort((a, b) => b.count - a.count);
+
+            // Color mapping - same as pie chart
+            const colorMap = {
+                'Manufacturing Issues': 'rgba(220, 38, 38, 0.8)',
+                'Increased Demand': 'rgba(59, 130, 246, 0.8)',
+                'Raw Material Shortage': 'rgba(245, 158, 11, 0.8)',
+                'Regulatory/Quality Issues': 'rgba(147, 51, 234, 0.8)',
+                'Product Discontinuation': 'rgba(249, 115, 22, 0.9)',  // orange - stands out
+                'Business Decision': 'rgba(16, 185, 129, 0.8)',
+                'Unknown/Not Specified': 'rgba(156, 163, 175, 0.6)'
+            };
+
+            reasonsBarChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: filtered.map(cat => cat.category),
+                    datasets: [{
+                        label: 'Number of Shortages',
+                        data: filtered.map(cat => cat.count),
+                        backgroundColor: filtered.map(cat => colorMap[cat.category] || 'rgba(156, 163, 175, 0.8)'),
+                        borderColor: filtered.map(cat => colorMap[cat.category]?.replace('0.8', '1') || 'rgba(156, 163, 175, 1)'),
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(context) {
+                                    const category = filtered[context.dataIndex];
+                                    return `${category.percentage}% of total`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Shortages'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>

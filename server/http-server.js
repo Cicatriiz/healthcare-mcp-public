@@ -6,6 +6,7 @@ import { URL } from 'url';
 
 import { CacheService } from './cache-service.js';
 import { FDATool } from './fda-tool.js';
+import { FDAShortageTool } from './fda-shortage-tool.js';
 import { PubMedTool } from './pubmed-tool.js';
 import { HealthTopicsTool } from './health-topics-tool.js';
 import { ClinicalTrialsTool } from './clinical-trials-tool.js';
@@ -15,6 +16,20 @@ import { MedicalCalculatorTool } from './medical-calculator-tool.js';
 import { NcbiBookshelfTool } from './ncbi-bookshelf-tool.js';
 import { DicomTool } from './dicom-tool.js';
 import { UsageService } from './usage-service.js';
+import { ShortageService } from './services/shortage-service.js';
+import { RxNormService } from './rxnorm-service.js';
+import { HistoryService } from './services/history-service.js';
+import { DailyMedService } from './services/dailymed-service.js';
+import { FDAAdverseEventsTool } from './tools/fda-adverse-events-tool.js';
+import { FDAEnforcementTool } from './tools/fda-enforcement-tool.js';
+import { ManufacturerLocationService } from './services/manufacturer-location-service.js';
+import snapshotService from './services/snapshot-service.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = parseInt(process.env.PORT || '3000', 10);
 const sessionId = randomUUID();
@@ -23,6 +38,7 @@ const cacheService = new CacheService(parseInt(process.env.CACHE_TTL) || 86400);
 const usageService = new UsageService();
 
 const fdaTool = new FDATool(cacheService);
+const fdaShortageTool = new FDAShortageTool(cacheService);
 const pubmedTool = new PubMedTool(cacheService);
 const healthTopicsTool = new HealthTopicsTool(cacheService);
 const clinicalTrialsTool = new ClinicalTrialsTool(cacheService);
@@ -31,6 +47,46 @@ const medrxivTool = new MedRxivTool(cacheService);
 const medicalCalculatorTool = new MedicalCalculatorTool(cacheService);
 const ncbiBookshelfTool = new NcbiBookshelfTool(cacheService);
 const dicomTool = new DicomTool(cacheService);
+
+// Initialize RxNorm and History services
+const rxnormService = new RxNormService(cacheService);
+const historyService = new HistoryService();
+
+// Initialize DailyMed, Adverse Events, and Enforcement services
+const dailymedService = new DailyMedService(cacheService);
+const adverseEventsService = new FDAAdverseEventsTool(cacheService);
+const enforcementService = new FDAEnforcementTool(cacheService);
+
+// Initialize Manufacturer Location Service
+const manufacturerLocationService = new ManufacturerLocationService(cacheService);
+
+// Initialize Shortage Service with all tools and services
+const shortageService = new ShortageService({
+  fdaShortage: fdaShortageTool,
+  fdaDrug: fdaTool,
+  pubmed: pubmedTool,
+  healthTopics: healthTopicsTool,
+  clinicalTrials: clinicalTrialsTool,
+  medicalTerminology: medicalTerminologyTool,
+  medrxiv: medrxivTool,
+  ncbiBookshelf: ncbiBookshelfTool
+}, cacheService, historyService, rxnormService, dailymedService, adverseEventsService, enforcementService, manufacturerLocationService);
+// Initialize Snapshot Service
+snapshotService.initialize();
+snapshotService.setShortageService(shortageService);
+
+const DASHBOARD_PUBLIC = path.join(__dirname, '..', 'dashboard', 'public');
+const MIME_TYPES = {
+  '.html': 'text/html',
+  '.css': 'text/css',
+  '.js': 'application/javascript',
+  '.json': 'application/json',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.ico': 'image/x-icon'
+};
 
 function writeJson(res, statusCode, body) {
   res.statusCode = statusCode;
@@ -42,12 +98,35 @@ function writeJson(res, statusCode, body) {
   res.end(JSON.stringify(body));
 }
 
+function serveStaticFile(filePath, res) {
+  const extname = path.extname(filePath);
+  const contentType = MIME_TYPES[extname] || 'application/octet-stream';
+
+  fs.readFile(filePath, (err, content) => {
+    if (err) {
+      if (err.code === 'ENOENT') {
+        writeJson(res, 404, { status: 'error', error_message: 'File not found' });
+      } else {
+        writeJson(res, 500, { status: 'error', error_message: `Server error: ${err.code}` });
+      }
+    } else {
+      res.writeHead(200, {
+        'Content-Type': contentType,
+        'Access-Control-Allow-Origin': '*'
+      });
+      res.end(content, 'utf-8');
+    }
+  });
+}
+
 async function handleCallTool(name, args) {
   usageService.recordUsage(sessionId, name);
 
   switch (name) {
     case 'fda_drug_lookup':
       return fdaTool.lookupDrug(args.drug_name, args.search_type);
+    case 'fda_shortage_search':
+      return fdaShortageTool.searchShortages(args);
     case 'pubmed_search':
       return pubmedTool.searchLiterature(args.query, args.max_results, args.date_range, args.open_access);
     case 'medrxiv_search':
@@ -104,6 +183,21 @@ const server = http.createServer(async (req, res) => {
       return writeJson(res, 200, result);
     }
 
+    if (req.method === 'GET' && pathname === '/api/fda_shortages') {
+      const params = {
+        query: url.searchParams.get('query') || undefined,
+        status: url.searchParams.get('status') || 'all',
+        therapeutic_category: url.searchParams.get('therapeutic_category') || undefined,
+        dosage_form: url.searchParams.get('dosage_form') || undefined,
+        company_name: url.searchParams.get('company_name') || undefined,
+        limit: parseInt(url.searchParams.get('limit') || '20', 10),
+        skip: parseInt(url.searchParams.get('skip') || '0', 10),
+        sort: url.searchParams.get('sort') || 'initial_posting_date:desc'
+      };
+      const result = await fdaShortageTool.searchShortages(params);
+      return writeJson(res, 200, result);
+    }
+
     if (req.method === 'GET' && pathname === '/api/pubmed') {
       const query = url.searchParams.get('query') || '';
       const maxResults = url.searchParams.get('max_results') || 5;
@@ -153,11 +247,370 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    // Dashboard API Endpoints
+    if (pathname.startsWith('/api/dashboard')) {
+      const dashboardPath = pathname.replace('/api/dashboard', '');
+
+      if (dashboardPath === '/health') {
+        return writeJson(res, 200, {
+          status: 'ok',
+          session_id: sessionId,
+          uptime_seconds: Math.floor(process.uptime()),
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      if (dashboardPath === '/trends') {
+        const result = await shortageService.getTemporalTrends();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/shortage-reasons') {
+        const result = await shortageService.getShortageReasons();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/shortages') {
+        const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+        const page = parseInt(url.searchParams.get('page') || '1', 10);
+        const skip = (page - 1) * limit;
+
+        const params = {
+          status: url.searchParams.get('status') || 'all',
+          therapeutic_category: url.searchParams.get('therapeutic_category') || undefined,
+          dosage_form: url.searchParams.get('dosage_form') || undefined,
+          company_name: url.searchParams.get('manufacturer') || undefined,
+          query: url.searchParams.get('query') || undefined,
+          limit,
+          skip
+        };
+
+        const result = await shortageService.fetchShortages(params);
+
+        if (result.status === 'success') {
+          // Transform pagination format to match frontend expectations
+          const total = result.total || 0;
+          const totalPages = Math.ceil(total / limit);
+
+          return writeJson(res, 200, {
+            status: 'success',
+            data: result.data,
+            pagination: {
+              page,
+              limit,
+              total,
+              totalPages,
+              hasPrev: page > 1,
+              hasNext: page < totalPages
+            }
+          });
+        }
+
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath.startsWith('/shortages/')) {
+        const ndc = dashboardPath.replace('/shortages/', '');
+        const enrich = url.searchParams.get('enrich') === 'true';
+        const result = await shortageService.getShortageDetailEnriched(ndc, enrich);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/analytics') {
+        const result = await shortageService.getAnalytics();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/map') {
+        const result = await shortageService.getGeographicDistribution();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/stats') {
+        const result = await shortageService.getStats();
+        return writeJson(res, 200, result);
+      }
+
+
+      // Get trend statistics
+      if (dashboardPath === '/trends/statistics') {
+        const stats = snapshotService.getTrendStatistics();
+        return writeJson(res, 200, { status: 'success', data: stats });
+      }
+
+      // Get all snapshots metadata
+      if (dashboardPath === '/snapshots') {
+        const snapshots = snapshotService.getAllSnapshots();
+        return writeJson(res, 200, { status: 'success', data: snapshots });
+      }
+
+      // Get drug trend by NDC or generic name
+      if (dashboardPath === '/trends/drug') {
+        const ndc = url.searchParams.get('ndc');
+        const genericName = url.searchParams.get('generic_name');
+
+        if (!ndc && !genericName) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc or generic_name parameter required' });
+        }
+
+        const trend = snapshotService.getDrugTrend(ndc, genericName);
+        return writeJson(res, 200, { status: 'success', data: trend });
+      }
+
+      // Manually trigger a snapshot (for testing)
+      if (dashboardPath === '/snapshots/trigger' && req.method === 'POST') {
+        const snapshotId = await snapshotService.takeSnapshot();
+        return writeJson(res, 200, { status: 'success', snapshot_id: snapshotId });
+      }
+
+      if (dashboardPath === '/therapeutic-classes') {
+        const result = await shortageService.getTherapeuticCategories();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/manufacturers') {
+        const result = await shortageService.getManufacturers();
+        return writeJson(res, 200, result);
+      }
+
+      // RxNorm API endpoints
+      if (dashboardPath === '/rxnorm/normalize') {
+        const drugName = url.searchParams.get('drug_name');
+        if (!drugName) {
+          return writeJson(res, 400, { status: 'error', error_message: 'drug_name parameter required' });
+        }
+        const result = await rxnormService.normalizeDrugName(drugName);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/rxnorm/details') {
+        const rxcui = url.searchParams.get('rxcui');
+        if (!rxcui) {
+          return writeJson(res, 400, { status: 'error', error_message: 'rxcui parameter required' });
+        }
+        const result = await rxnormService.getDrugDetails(rxcui);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/rxnorm/alternatives') {
+        const rxcui = url.searchParams.get('rxcui');
+        if (!rxcui) {
+          return writeJson(res, 400, { status: 'error', error_message: 'rxcui parameter required' });
+        }
+        const result = await rxnormService.getTherapeuticAlternatives(rxcui);
+        return writeJson(res, 200, result);
+      }
+
+      // History API endpoints
+      if (dashboardPath === '/history/stats') {
+        const result = await historyService.getStats();
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/history/timeline') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+        const result = await historyService.getShortageTimeline(ndc);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/history/trends') {
+        const startDate = url.searchParams.get('start_date');
+        const endDate = url.searchParams.get('end_date');
+        const result = await historyService.getHistoricalTrends(startDate, endDate);
+        return writeJson(res, 200, result);
+      }
+
+      if (dashboardPath === '/history/snapshot') {
+        // Trigger a manual snapshot
+        const result = await historyService.takeSnapshot(fdaShortageTool);
+        return writeJson(res, 200, result);
+      }
+
+      // Therapeutic alternatives endpoint
+      if (dashboardPath === '/alternatives') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get shortage detail first
+        const shortageResult = await shortageService.getShortageDetail(ndc);
+        if (shortageResult.status === 'error') {
+          return writeJson(res, 404, shortageResult);
+        }
+
+        // Get therapeutic alternatives
+        const result = await shortageService.getTherapeuticAlternatives(shortageResult.shortage);
+        return writeJson(res, 200, result);
+      }
+
+      // DailyMed endpoint - drug images and labels
+      if (dashboardPath === '/dailymed') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get shortage detail first
+        const shortageResult = await shortageService.getShortageDetail(ndc);
+        if (shortageResult.status === 'error') {
+          return writeJson(res, 404, shortageResult);
+        }
+
+        // Get DailyMed info
+        const result = await shortageService.getDailyMedInfo(shortageResult.shortage);
+        return writeJson(res, 200, result);
+      }
+
+      // Adverse events endpoint - safety signals
+      if (dashboardPath === '/adverse-events') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get shortage detail first
+        const shortageResult = await shortageService.getShortageDetail(ndc);
+        if (shortageResult.status === 'error') {
+          return writeJson(res, 404, shortageResult);
+        }
+
+        // Get adverse events summary
+        const result = await shortageService.getAdverseEventsSummary(shortageResult.shortage);
+        return writeJson(res, 200, result);
+      }
+
+      // Recalls endpoint - enforcement data
+      if (dashboardPath === '/recalls') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get shortage detail first
+        const shortageResult = await shortageService.getShortageDetail(ndc);
+        if (shortageResult.status === 'error') {
+          return writeJson(res, 404, shortageResult);
+        }
+
+        // Get recalls summary
+        const result = await shortageService.getRecallsSummary(shortageResult.shortage);
+        return writeJson(res, 200, result);
+      }
+
+      // Comprehensive enriched data endpoint - all new sources
+      if (dashboardPath === '/enriched') {
+        const ndc = url.searchParams.get('ndc');
+        if (!ndc) {
+          return writeJson(res, 400, { status: 'error', error_message: 'ndc parameter required' });
+        }
+
+        // Get comprehensive enriched data
+        const result = await shortageService.getComprehensiveShortageData(ndc);
+        return writeJson(res, 200, result);
+      }
+
+      // Manufacturer Location Endpoints
+
+      // Get location for a specific manufacturer
+      if (dashboardPath === '/manufacturer-location') {
+        const manufacturerName = url.searchParams.get('name');
+        if (!manufacturerName) {
+          return writeJson(res, 400, { status: 'error', error_message: 'name parameter required' });
+        }
+
+        const result = await manufacturerLocationService.getManufacturerLocation(manufacturerName);
+        return writeJson(res, 200, result);
+      }
+
+      // Get all manufacturer locations
+      if (dashboardPath === '/manufacturer-locations') {
+        const result = await manufacturerLocationService.getAllManufacturerLocations();
+        return writeJson(res, 200, result);
+      }
+
+      // Get manufacturers by state
+      if (dashboardPath === '/manufacturers-by-state') {
+        const state = url.searchParams.get('state');
+        if (!state) {
+          return writeJson(res, 400, { status: 'error', error_message: 'state parameter required' });
+        }
+
+        const result = await manufacturerLocationService.getManufacturersByState(state);
+        return writeJson(res, 200, result);
+      }
+
+      // Get shortages enriched with manufacturer locations
+      if (dashboardPath === '/shortages-with-locations') {
+        const limit = parseInt(url.searchParams.get('limit') || '20', 10);
+        const page = parseInt(url.searchParams.get('page') || '1', 10);
+        const skip = (page - 1) * limit;
+
+        const params = {
+          status: url.searchParams.get('status') || 'all',
+          therapeutic_category: url.searchParams.get('therapeutic_category') || undefined,
+          dosage_form: url.searchParams.get('dosage_form') || undefined,
+          company_name: url.searchParams.get('manufacturer') || undefined,
+          query: url.searchParams.get('query') || undefined,
+          limit,
+          skip
+        };
+
+        // First get the shortages
+        const shortagesResult = await shortageService.fetchShortages(params);
+
+        if (shortagesResult.status === 'success') {
+          // Then enrich with location data
+          const enrichedResult = await manufacturerLocationService.enrichShortagesWithLocations(shortagesResult.data);
+
+          const total = shortagesResult.total || 0;
+          const totalPages = Math.ceil(total / limit);
+
+          return writeJson(res, 200, {
+            status: 'success',
+            data: enrichedResult.shortages,
+            pagination: {
+              page,
+              limit,
+              total,
+              totalPages,
+              hasPrev: page > 1,
+              hasNext: page < totalPages
+            }
+          });
+        }
+
+        return writeJson(res, 200, shortagesResult);
+      }
+    }
+
+    // Serve dashboard static files
+    if (!pathname.startsWith('/api') && !pathname.startsWith('/mcp')) {
+      let filePath = pathname === '/' ? '/index.html' : pathname;
+      filePath = path.join(DASHBOARD_PUBLIC, filePath);
+      return serveStaticFile(filePath, res);
+    }
+
     writeJson(res, 404, { status: 'error', error_message: 'Not Found' });
   } catch (error) {
     console.error('HTTP handler error:', error);
     writeJson(res, 500, { status: 'error', error_message: error.message });
   }
+});
+
+
+// Start daily snapshot scheduler and take initial snapshot
+snapshotService.startScheduler('0 0 * * *'); // Daily at midnight
+console.log('📸 Taking initial snapshot...');
+snapshotService.takeSnapshot().then(snapshotId => {
+  if (snapshotId) {
+    console.log(`✅ Initial snapshot complete (ID: ${snapshotId})`);
+  }
+}).catch(err => {
+  console.error('❌ Initial snapshot failed:', err);
 });
 
 server.listen(PORT, () => {

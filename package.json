@@ -11,7 +11,8 @@
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "test": "node --test",
-    "server:http": "node server/http-server.js"
+    "server:http": "node server/http-server.js",
+    "parse:manufacturers": "node scripts/parse-manufacturer-data.js"
   },
   "keywords": [
     "healthcare",
@@ -27,9 +28,12 @@
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0",
-    "node-fetch": "^3.3.2",
+    "better-sqlite3": "^12.5.0",
+    "dotenv": "^17.2.3",
     "node-cache": "^5.1.2",
-    "sqlite3": "^5.1.6"
+    "node-cron": "^4.2.1",
+    "sqlite3": "^5.1.6",
+    "xlsx": "^0.18.5"
   },
   "engines": {
     "node": ">=18.0.0"

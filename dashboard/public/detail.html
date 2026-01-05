@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shortage Detail - FDA Drug Shortage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .tab-button {
+            padding: 1rem 1.5rem;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+        .tab-button:hover {
+            color: #111827;
+            border-bottom-color: #e5e7eb;
+        }
+        .tab-button.active {
+            color: #2563eb;
+            border-bottom-color: #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">FDA Drug Shortage Intelligence Dashboard</h1>
+                    <p class="text-sm text-gray-600 mt-1">Shortage Detail</p>
+                </div>
+                <nav class="flex space-x-4">
+                    <a href="index.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">← Back to Shortages</a>
+                    <a href="analytics.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Analytics</a>
+                    <a href="map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Map</a>
+                    <a href="about.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">About</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Loading State -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-600">Loading shortage details...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <div class="text-red-600 text-lg font-semibold mb-2">Error Loading Details</div>
+            <div id="error-message" class="text-red-800 mb-4"></div>
+            <a href="index.html" class="inline-block px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                Back to Dashboard
+            </a>
+        </div>
+
+        <!-- Detail Content -->
+        <div id="detail-content" class="hidden space-y-6">
+            <!-- Basic Info Card -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="flex items-start justify-between">
+                    <div class="flex-1">
+                        <h2 id="drug-name" class="text-3xl font-bold text-gray-900 mb-2">Loading...</h2>
+                        <p id="brand-name" class="text-lg text-gray-600 mb-4"></p>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">NDC</div>
+                                <div id="ndc" class="mt-1 text-sm text-gray-900">-</div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Manufacturer</div>
+                                <div id="manufacturer" class="mt-1 text-sm text-gray-900">-</div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Dosage Form</div>
+                                <div id="dosage-form" class="mt-1 text-sm text-gray-900">-</div>
+                            </div>
+                            <div>
+                                <div class="text-sm font-medium text-gray-500">Route</div>
+                                <div id="route" class="mt-1 text-sm text-gray-900">-</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="status-badge"></div>
+                </div>
+            </div>
+
+            <!-- Shortage Information -->
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-4">Shortage Information</h3>
+                <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Initial Posting Date</dt>
+                        <dd id="initial-date" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+                        <dd id="last-updated" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Therapeutic Categories</dt>
+                        <dd id="categories" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div>
+                        <dt class="text-sm font-medium text-gray-500">Strength</dt>
+                        <dd id="strength" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div class="md:col-span-2">
+                        <dt class="text-sm font-medium text-gray-500">Shortage Reason</dt>
+                        <dd id="shortage-reason" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div class="md:col-span-2">
+                        <dt class="text-sm font-medium text-gray-500">Availability</dt>
+                        <dd id="availability" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                    <div class="md:col-span-2" id="related-info-container" class="hidden">
+                        <dt class="text-sm font-medium text-gray-500">Related Information</dt>
+                        <dd id="related-info" class="mt-1 text-sm text-gray-900">-</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <!-- Therapeutic Alternatives (RxNorm) -->
+            <div id="therapeutic-alternatives-section" class="hidden bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">💊 Therapeutic Alternatives</h3>
+                <p class="text-sm text-gray-600 mb-4">Similar drugs in the same therapeutic class (via RxNorm)</p>
+
+                <div id="therapeutic-alternatives-loading" class="flex items-center justify-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span class="ml-3 text-blue-800">Finding alternatives...</span>
+                </div>
+
+                <div id="therapeutic-alternatives-content" class="hidden">
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <span class="text-sm text-gray-600">Therapeutic Class:</span>
+                                <span id="therapeutic-class" class="ml-2 font-semibold text-gray-900"></span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold text-green-600" id="alternatives-available-count">0</div>
+                                <div class="text-xs text-gray-500">Available Alternatives</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="therapeutic-alternatives-list" class="grid grid-cols-1 md:grid-cols-2 gap-3"></div>
+                </div>
+
+                <div id="therapeutic-alternatives-error" class="hidden bg-yellow-50 border border-yellow-200 rounded p-4">
+                    <p class="text-sm text-yellow-800">Could not find therapeutic alternatives for this drug.</p>
+                </div>
+            </div>
+
+            <!-- Drug Images (DailyMed) -->
+            <div id="dailymed-section" class="hidden bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-lg p-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">📸 Drug Images & Label</h3>
+                <p class="text-sm text-gray-600 mb-4">Official FDA-approved product information (via DailyMed)</p>
+
+                <div id="dailymed-loading" class="flex items-center justify-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                    <span class="ml-3 text-purple-800">Loading drug information...</span>
+                </div>
+
+                <div id="dailymed-content" class="hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div id="product-images" class="bg-white rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-900 mb-3">Product Images</h4>
+                            <div id="product-images-list" class="space-y-2"></div>
+                        </div>
+                        <div id="package-images" class="bg-white rounded-lg p-4">
+                            <h4 class="font-semibold text-gray-900 mb-3">Package Images</h4>
+                            <div id="package-images-list" class="space-y-2"></div>
+                        </div>
+                    </div>
+                    <div id="label-info" class="mt-4 bg-white rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-900 mb-2">Label Information</h4>
+                        <div id="label-details" class="text-sm text-gray-700"></div>
+                    </div>
+                </div>
+
+                <div id="dailymed-error" class="hidden bg-yellow-50 border border-yellow-200 rounded p-4">
+                    <p class="text-sm text-yellow-800">DailyMed data not available for this drug.</p>
+                </div>
+            </div>
+
+            <!-- Recalls & Enforcement Actions -->
+            <div id="recalls-section" class="hidden bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-lg p-6 mt-6">
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">🚨 Recalls & Enforcement Actions</h3>
+                <p class="text-sm text-gray-600 mb-4">FDA enforcement reports and recalls (may explain shortage cause)</p>
+
+                <div id="recalls-loading" class="flex items-center justify-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-600"></div>
+                    <span class="ml-3 text-yellow-800">Checking for recalls...</span>
+                </div>
+
+                <div id="recalls-content" class="hidden">
+                    <div id="recall-correlation" class="bg-white rounded-lg p-4 mb-4">
+                        <h4 class="font-semibold text-gray-900 mb-2">Shortage Correlation Analysis</h4>
+                        <div id="correlation-analysis" class="text-sm text-gray-700"></div>
+                    </div>
+                    <div class="bg-white rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-900 mb-3">Recent Recalls</h4>
+                        <div id="recalls-list" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <div id="recalls-error" class="hidden bg-green-50 border border-green-200 rounded p-4">
+                    <p class="text-sm text-green-800">✓ No recalls found for this drug - good news!</p>
+                </div>
+            </div>
+
+            <!-- Alternatives Section -->
+            <div id="alternatives-section" class="hidden">
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold mb-4">Alternative Therapies</h3>
+                    <div id="alternatives-list" class="space-y-3"></div>
+
+                    <h3 class="text-lg font-semibold mt-6 mb-4">Related ICD-10 Codes</h3>
+                    <div id="icd-list" class="space-y-2"></div>
+                </div>
+            </div>
+
+            <!-- Loading Enrichment -->
+            <div id="enrichment-loading" class="hidden bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                <p class="mt-2 text-sm text-blue-800">Loading clinical context...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="js/api-client.js"></script>
+    <script>
+        // Get NDC from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const ndc = urlParams.get('ndc');
+
+        // Load detail on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!ndc) {
+                showError('No NDC specified in URL');
+                return;
+            }
+            loadShortageDetail(ndc);
+        });
+
+        async function loadShortageDetail(ndc) {
+            const loading = document.getElementById('loading');
+            const error = document.getElementById('error');
+            const content = document.getElementById('detail-content');
+
+            try {
+                loading.classList.remove('hidden');
+                error.classList.add('hidden');
+                content.classList.add('hidden');
+
+                // Fetch shortage detail WITH enrichment
+                const result = await api.getShortageDetail(ndc, true);
+
+                if (result.status === 'success' && result.shortage) {
+                    renderShortageDetail(result.shortage);
+                    content.classList.remove('hidden');
+
+                    // Load therapeutic alternatives
+                    loadTherapeuticAlternatives(ndc);
+
+                    // Load DailyMed data (images and labels)
+                    loadDailyMedData(ndc);
+
+                    // Load adverse events data
+                    // loadAdverseEventsData(ndc); // DISABLED - not showing data
+
+                    // Load recalls data
+                    loadRecallsData(ndc);
+
+                    // Load enrichment data if available
+                    if (result.shortage.enrichment) {
+                        renderEnrichment(result.shortage.enrichment, result.shortage.enrichment_status);
+                    }
+                } else {
+                    throw new Error(result.error_message || 'Shortage not found');
+                }
+            } catch (err) {
+                console.error('Error loading shortage detail:', err);
+                showError(err.message);
+            } finally {
+                loading.classList.add('hidden');
+            }
+        }
+
+        async function loadTherapeuticAlternatives(ndc) {
+            const section = document.getElementById('therapeutic-alternatives-section');
+            const loading = document.getElementById('therapeutic-alternatives-loading');
+            const content = document.getElementById('therapeutic-alternatives-content');
+            const errorEl = document.getElementById('therapeutic-alternatives-error');
+
+            try {
+                section.classList.remove('hidden');
+                loading.classList.remove('hidden');
+                content.classList.add('hidden');
+                errorEl.classList.add('hidden');
+
+                const result = await api.getTherapeuticAlternatives(ndc);
+
+                if (result.status === 'success' && result.alternatives) {
+                    renderTherapeuticAlternatives(result);
+                    loading.classList.add('hidden');
+                    content.classList.remove('hidden');
+                } else {
+                    loading.classList.add('hidden');
+                    errorEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Error loading therapeutic alternatives:', err);
+                loading.classList.add('hidden');
+                errorEl.classList.remove('hidden');
+            }
+        }
+
+        function renderTherapeuticAlternatives(data) {
+            // Set therapeutic class
+            const className = data.primary_class?.className || 'Unknown';
+            document.getElementById('therapeutic-class').textContent = className;
+
+            // Set available count
+            document.getElementById('alternatives-available-count').textContent = data.available_count || 0;
+
+            // Render alternatives list
+            const list = document.getElementById('therapeutic-alternatives-list');
+
+            if (!data.available_alternatives || data.available_alternatives.length === 0) {
+                list.innerHTML = '<p class="col-span-2 text-gray-500 text-center py-4">All alternatives in this therapeutic class are also in shortage.</p>';
+                return;
+            }
+
+            list.innerHTML = data.available_alternatives.map(alt => `
+                <div class="bg-white border border-gray-200 rounded-lg p-4 hover:border-blue-300 hover:shadow-md transition">
+                    <div class="flex items-start justify-between">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900">${escapeHtml(alt.name)}</h4>
+                            <p class="text-xs text-gray-500 mt-1">RxCUI: ${alt.rxcui}</p>
+                        </div>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">Available</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderShortageDetail(shortage) {
+            // Basic info
+            document.getElementById('drug-name').textContent = shortage.generic_name || 'Unknown Drug';
+            document.getElementById('brand-name').textContent = shortage.brand_name || '';
+            document.getElementById('ndc').textContent = shortage.ndc || '-';
+            document.getElementById('manufacturer').textContent = shortage.manufacturer || 'Unknown';
+            document.getElementById('dosage-form').textContent = shortage.dosage_form || '-';
+            document.getElementById('route').textContent = shortage.route || '-';
+
+            // Status badge
+            const statusBadge = document.getElementById('status-badge');
+            if (shortage.status === 'active') {
+                statusBadge.innerHTML = '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-red-100 text-red-800">Active Shortage</span>';
+            } else {
+                statusBadge.innerHTML = '<span class="px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">Resolved</span>';
+            }
+
+            // Dates
+            document.getElementById('initial-date').textContent = shortage.initial_date
+                ? new Date(shortage.initial_date).toLocaleDateString()
+                : '-';
+            document.getElementById('last-updated').textContent = shortage.last_updated
+                ? new Date(shortage.last_updated).toLocaleDateString()
+                : '-';
+
+            // Categories
+            const categories = shortage.therapeutic_categories || [];
+            document.getElementById('categories').textContent = categories.length > 0
+                ? categories.join(', ')
+                : 'Not specified';
+
+            // Strength
+            const strengths = shortage.strength || [];
+            document.getElementById('strength').textContent = strengths.length > 0
+                ? strengths.join(', ')
+                : '-';
+
+            // Shortage details
+            document.getElementById('shortage-reason').textContent = shortage.shortage_reason || 'Not specified';
+            document.getElementById('availability').textContent = shortage.availability || 'Not specified';
+
+            // Related info
+            if (shortage.related_info) {
+                document.getElementById('related-info-container').classList.remove('hidden');
+                const relatedInfoEl = document.getElementById('related-info');
+                if (shortage.related_info_link) {
+                    relatedInfoEl.innerHTML = `<a href="${shortage.related_info_link}" target="_blank" class="text-blue-600 hover:underline">${shortage.related_info}</a>`;
+                } else {
+                    relatedInfoEl.textContent = shortage.related_info;
+                }
+            }
+        }
+
+        function renderEnrichment(enrichment, status) {
+            const alternativesSection = document.getElementById('alternatives-section');
+
+            // Show alternatives section
+            alternativesSection.classList.remove('hidden');
+
+            // Render Alternatives
+            renderAlternatives(enrichment.alternatives || []);
+
+            // Render ICD codes
+            renderICDCodes(enrichment.icd_codes || []);
+        }
+
+        function renderPubMedArticles(articles) {
+            const list = document.getElementById('pubmed-list');
+            if (!articles || articles.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No PubMed articles found</p>';
+                return;
+            }
+            list.innerHTML = articles.slice(0, 5).map(article => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="https://pubmed.ncbi.nlm.nih.gov/${article.pmid}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(article.title || 'Untitled')}</a>
+                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(article.authors || 'Unknown authors')}</p>
+                    <p class="text-xs text-gray-500">${article.journal || 'Unknown journal'} ${article.year ? '(' + article.year + ')' : ''}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderMedRxivPreprints(articles) {
+            const list = document.getElementById('medrxiv-list');
+            if (!articles || articles.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No medRxiv preprints found</p>';
+                return;
+            }
+            list.innerHTML = articles.slice(0, 5).map(article => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="${article.url || '#'}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(article.title || 'Untitled')}</a>
+                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(article.authors || 'Unknown authors')}</p>
+                    <p class="text-xs text-gray-500">${article.date || 'Unknown date'}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderHealthTopics(topics) {
+            const list = document.getElementById('health-list');
+            if (!topics || topics.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No health topics found</p>';
+                return;
+            }
+            list.innerHTML = topics.slice(0, 5).map(topic => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="${topic.url || '#'}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(topic.title || 'Untitled')}</a>
+                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(topic.description || '')}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderBookshelfResources(resources) {
+            const list = document.getElementById('bookshelf-list');
+            if (!resources || resources.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No NCBI Bookshelf resources found</p>';
+                return;
+            }
+            list.innerHTML = resources.slice(0, 5).map(resource => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="${resource.url || '#'}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(resource.title || 'Untitled')}</a>
+                    <p class="text-sm text-gray-600 mt-1">${escapeHtml(resource.description || '')}</p>
+                </div>
+            `).join('');
+        }
+
+        function renderClinicalTrials(trials) {
+            const list = document.getElementById('trials-list');
+            if (!trials || trials.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No clinical trials found</p>';
+                return;
+            }
+            list.innerHTML = trials.slice(0, 5).map(trial => `
+                <div class="border-b border-gray-100 pb-3">
+                    <a href="https://clinicaltrials.gov/study/${trial.nct_id}" target="_blank" class="text-blue-600 hover:underline font-medium">${escapeHtml(trial.title || 'Untitled')}</a>
+                    <div class="mt-1 flex items-center gap-2">
+                        <span class="px-2 py-1 text-xs rounded-full ${trial.status === 'Recruiting' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${trial.status || 'Unknown'}</span>
+                        <span class="text-xs text-gray-500">${trial.condition || ''}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderAlternatives(alternatives) {
+            const list = document.getElementById('alternatives-list');
+            if (!alternatives || alternatives.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No alternative therapies identified</p>';
+                return;
+            }
+            list.innerHTML = alternatives.map(alt => `
+                <div class="border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900">${escapeHtml(alt.generic_name || 'Unknown')}</h4>
+                    ${alt.brand_name ? `<p class="text-sm text-gray-600">${escapeHtml(alt.brand_name)}</p>` : ''}
+                    <div class="mt-2 grid grid-cols-2 gap-2 text-xs">
+                        <div><span class="text-gray-500">Manufacturer:</span> ${escapeHtml(alt.manufacturer || 'Unknown')}</div>
+                        <div><span class="text-gray-500">Form:</span> ${escapeHtml(alt.dosage_form || 'Unknown')}</div>
+                        <div><span class="text-gray-500">Strength:</span> ${Array.isArray(alt.strength) ? alt.strength.join(', ') : (alt.strength || 'Unknown')}</div>
+                        <div><span class="text-gray-500">Status:</span>
+                            <span class="px-2 py-1 rounded-full ${alt.status === 'resolved' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">${alt.status || 'Unknown'}</span>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderICDCodes(codes) {
+            const list = document.getElementById('icd-list');
+            if (!codes || codes.length === 0) {
+                list.innerHTML = '<p class="text-gray-500">No related ICD-10 codes found</p>';
+                return;
+            }
+            list.innerHTML = codes.slice(0, 10).map(code => `
+                <div class="flex items-center justify-between border-b border-gray-100 pb-2">
+                    <div>
+                        <span class="font-mono text-sm font-medium text-blue-600">${escapeHtml(code.code || '')}</span>
+                        <span class="text-sm text-gray-900 ml-2">${escapeHtml(code.description || '')}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+
+        // Load DailyMed data
+        async function loadDailyMedData(ndc) {
+            const section = document.getElementById('dailymed-section');
+            const loading = document.getElementById('dailymed-loading');
+            const content = document.getElementById('dailymed-content');
+            const error = document.getElementById('dailymed-error');
+
+            section.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+            error.classList.add('hidden');
+
+            try {
+                console.log('[DailyMed] Fetching data for NDC:', ndc);
+                const data = await api.getDailyMedInfo(ndc);
+                console.log('[DailyMed] Response:', data);
+
+                if (data.status === 'success') {
+                    console.log('[DailyMed] Rendering data - Product images:', data.images?.product_images?.length || 0, 'Package images:', data.images?.package_images?.length || 0);
+                    renderDailyMedData(data);
+                    loading.classList.add('hidden');
+                    content.classList.remove('hidden');
+                } else {
+                    console.log('[DailyMed] No data available - Status:', data.status, 'Message:', data.message || data.error_message);
+                    loading.classList.add('hidden');
+                    error.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('[DailyMed] Error loading data:', err);
+                loading.classList.add('hidden');
+                error.classList.remove('hidden');
+            }
+        }
+
+        function renderDailyMedData(data) {
+            // Render product images
+            const productImagesList = document.getElementById('product-images-list');
+            if (data.images?.product_images && data.images.product_images.length > 0) {
+                productImagesList.innerHTML = data.images.product_images.map(img => `
+                    <img src="${img.url}" alt="${escapeHtml(img.name)}" class="w-full rounded border border-gray-200" />
+                `).join('');
+            } else {
+                productImagesList.innerHTML = '<p class="text-sm text-gray-500">No product images available</p>';
+            }
+
+            // Render package images
+            const packageImagesList = document.getElementById('package-images-list');
+            if (data.images?.package_images && data.images.package_images.length > 0) {
+                packageImagesList.innerHTML = data.images.package_images.map(img => `
+                    <img src="${img.url}" alt="${escapeHtml(img.name)}" class="w-full rounded border border-gray-200" />
+                `).join('');
+            } else {
+                packageImagesList.innerHTML = '<p class="text-sm text-gray-500">No package images available</p>';
+            }
+
+            // Render label info
+            const labelDetails = document.getElementById('label-details');
+            if (data.label) {
+                labelDetails.innerHTML = `
+                    <p><strong>Title:</strong> ${escapeHtml(data.label.title || 'N/A')}</p>
+                    <p><strong>Labeler:</strong> ${escapeHtml(data.label.labeler || 'N/A')}</p>
+                    <p><strong>Published:</strong> ${data.label.published_date || 'N/A'}</p>
+                    ${data.spl_url ? `<p class="mt-2"><a href="${data.spl_url}" target="_blank" class="text-blue-600 hover:underline">View Full Label on DailyMed →</a></p>` : ''}
+                `;
+            }
+        }
+
+        // Load recalls data
+        async function loadRecallsData(ndc) {
+            const section = document.getElementById('recalls-section');
+            const loading = document.getElementById('recalls-loading');
+            const content = document.getElementById('recalls-content');
+            const error = document.getElementById('recalls-error');
+
+            section.classList.remove('hidden');
+            loading.classList.remove('hidden');
+            content.classList.add('hidden');
+            error.classList.add('hidden');
+
+            try {
+                const data = await api.getRecalls(ndc);
+
+                if (data.status === 'success' && data.has_recalls) {
+                    renderRecallsData(data);
+                    loading.classList.add('hidden');
+                    content.classList.remove('hidden');
+                } else {
+                    loading.classList.add('hidden');
+                    error.classList.remove('hidden');
+                }
+            } catch (err) {
+                console.error('Error loading recalls:', err);
+                loading.classList.add('hidden');
+                error.classList.remove('hidden');
+            }
+        }
+
+        function renderRecallsData(data) {
+            // Render correlation analysis
+            const correlationAnalysis = document.getElementById('correlation-analysis');
+            if (data.shortage_correlation) {
+                const corr = data.shortage_correlation;
+                correlationAnalysis.innerHTML = `
+                    <div class="${corr.likely_cause ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'} rounded p-3">
+                        <p class="font-semibold ${corr.likely_cause ? 'text-red-900' : 'text-yellow-900'}">
+                            ${corr.likely_cause ? '⚠️ Likely Shortage Cause' : 'ℹ️ Possible Correlation'}
+                        </p>
+                        <p class="text-sm mt-1">${escapeHtml(corr.analysis)}</p>
+                        ${corr.manufacturing_recalls > 0 ? `<p class="text-sm mt-1"><strong>${corr.manufacturing_recalls}</strong> manufacturing-related recalls found</p>` : ''}
+                    </div>
+                `;
+            }
+
+            // Render recalls list
+            const recallsList = document.getElementById('recalls-list');
+            if (data.recent_recalls && data.recent_recalls.length > 0) {
+                recallsList.innerHTML = data.recent_recalls.map(recall => `
+                    <div class="border border-yellow-300 rounded-lg p-4 bg-yellow-50">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="font-semibold text-gray-900">${escapeHtml(recall.product_description || 'Unknown product')}</div>
+                                <div class="text-sm text-gray-700 mt-1"><strong>Reason:</strong> ${escapeHtml(recall.reason || 'Not specified')}</div>
+                                <div class="text-xs text-gray-600 mt-2">
+                                    <span class="inline-block mr-3"><strong>Recall #:</strong> ${escapeHtml(recall.recall_number || 'N/A')}</span>
+                                    <span class="inline-block mr-3"><strong>Date:</strong> ${recall.recall_initiation_date || 'N/A'}</span>
+                                    <span class="inline-block"><strong>Firm:</strong> ${escapeHtml(recall.recalling_firm || 'N/A')}</span>
+                                </div>
+                            </div>
+                            <span class="ml-3 px-2 py-1 text-xs rounded-full ${recall.classification?.includes('Class I') ? 'bg-red-100 text-red-800' : recall.classification?.includes('Class II') ? 'bg-orange-100 text-orange-800' : 'bg-yellow-100 text-yellow-800'}">
+                                ${escapeHtml(recall.classification || 'Unknown')}
+                            </span>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-2">${escapeHtml(recall.severity || '')}</div>
+                    </div>
+                `).join('');
+            } else {
+                recallsList.innerHTML = '<p class="text-sm text-gray-500">No recalls found</p>';
+            }
+        }
+
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            document.getElementById('error').classList.remove('hidden');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

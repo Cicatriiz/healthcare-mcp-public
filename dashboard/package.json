@@ -1,0 +1,16 @@
+{
+  "name": "healthcare-mcp-dashboard",
+  "version": "1.0.0",
+  "description": "FDA Drug Shortage Intelligence Dashboard",
+  "type": "module",
+  "scripts": {
+    "start": "node simple-server.js",
+    "dev": "node simple-server.js"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "node-cache": "^5.1.2",
+    "node-fetch": "^3.3.2"
+  }
+}

@@ -8,7 +8,9 @@
     "start": "node index.js",
     "dev": "node --watch index.js",
     "test": "node --test",
-    "server:http": "node http-server.js"
+    "server:http": "node http-server.js",
+    "dashboard": "node dashboard-server.js",
+    "dashboard:dev": "node --watch dashboard-server.js"
   },
   "keywords": [
     "healthcare",

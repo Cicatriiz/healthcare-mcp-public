@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 // Import our tools and services
 import { CacheService } from './cache-service.js';
 import { FDATool } from './fda-tool.js';
+import { FDAShortageTool } from './fda-shortage-tool.js';
 import { PubMedTool } from './pubmed-tool.js';
 import { HealthTopicsTool } from './health-topics-tool.js';
 import { ClinicalTrialsTool } from './clinical-trials-tool.js';
@@ -27,6 +28,7 @@ const usageService = new UsageService();
 
 // Initialize tools
 const fdaTool = new FDATool(cacheService);
+const fdaShortageTool = new FDAShortageTool(cacheService);
 const pubmedTool = new PubMedTool(cacheService);
 const healthTopicsTool = new HealthTopicsTool(cacheService);
 const clinicalTrialsTool = new ClinicalTrialsTool(cacheService);
@@ -74,6 +76,55 @@ server.setRequestHandler(ListToolsRequestSchema, async (request) => {
             },
           },
           required: ["drug_name"],
+        },
+      },
+      {
+        name: "fda_shortage_search",
+        description: "Search for current FDA drug shortages with flexible filtering by drug name, status, therapeutic category, dosage form, and manufacturer",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "Search term (drug name, NDC, etc.)",
+            },
+            status: {
+              type: "string",
+              description: "Shortage status filter",
+              enum: ["active", "resolved", "all"],
+              default: "all",
+            },
+            therapeutic_category: {
+              type: "string",
+              description: "Filter by therapeutic category (e.g., 'Antibiotic', 'Chemotherapy')",
+            },
+            dosage_form: {
+              type: "string",
+              description: "Filter by dosage form (e.g., 'Injection', 'Tablet', 'Capsule')",
+            },
+            company_name: {
+              type: "string",
+              description: "Filter by manufacturer/company name",
+            },
+            limit: {
+              type: "number",
+              description: "Maximum number of results to return (default: 20, max: 100)",
+              default: 20,
+              minimum: 1,
+              maximum: 100,
+            },
+            skip: {
+              type: "number",
+              description: "Number of results to skip for pagination",
+              default: 0,
+              minimum: 0,
+            },
+            sort: {
+              type: "string",
+              description: "Sort field and direction (e.g., 'initial_posting_date:desc')",
+              default: "initial_posting_date:desc",
+            },
+          },
         },
       },
       {
@@ -285,6 +336,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case "fda_drug_lookup":
         result = await fdaTool.lookupDrug(args.drug_name, args.search_type);
+        break;
+
+      case "fda_shortage_search":
+        result = await fdaShortageTool.searchShortages(args);
         break;
 
       case "pubmed_search":

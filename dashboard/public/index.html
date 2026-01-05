@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FDA Drug Shortage Intelligence Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="css/styles.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#0066cc',
+                        secondary: '#6366f1',
+                        danger: '#dc2626',
+                        warning: '#f59e0b',
+                        success: '#10b981',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">FDA Drug Shortage Intelligence Dashboard</h1>
+                    <p class="text-sm text-gray-600 mt-1">Real-time shortage tracking with clinical context</p>
+                </div>
+                <nav class="flex space-x-4">
+                    <a href="index.html" class="px-4 py-2 rounded-md bg-primary text-white font-medium">Shortages</a>
+                    <a href="analytics.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Analytics</a>
+                    <a href="trends.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Trends</a>
+                    <a href="map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Map</a>
+                    <a href="about.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">About</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Summary Stats -->
+        <div id="stats-container" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <!-- Stats will be loaded here -->
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <!-- Search -->
+                <div class="lg:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search Drug Name or NDC</label>
+                    <input type="text" id="search-input" placeholder="e.g., Amoxicillin, 0123-4567..."
+                           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <select id="status-filter" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary">
+                        <option value="all">All Shortages</option>
+                        <option value="active" selected>Active Only</option>
+                        <option value="resolved">Resolved Only</option>
+                    </select>
+                </div>
+
+                <!-- Therapeutic Category Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Therapeutic Class</label>
+                    <select id="category-filter" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary">
+                        <option value="">All Categories</option>
+                        <!-- Categories loaded dynamically -->
+                    </select>
+                </div>
+
+                <!-- Dosage Form Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Dosage Form</label>
+                    <select id="form-filter" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary">
+                        <option value="">All Forms</option>
+                        <option value="Injection">Injection</option>
+                        <option value="Tablet">Tablet</option>
+                        <option value="Capsule">Capsule</option>
+                        <option value="Solution">Solution</option>
+                        <option value="Suspension">Suspension</option>
+                    </select>
+                </div>
+
+                <!-- Manufacturer Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Manufacturer</label>
+                    <select id="manufacturer-filter" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary">
+                        <option value="">All Manufacturers</option>
+                        <!-- Manufacturers loaded dynamically -->
+                    </select>
+                </div>
+
+                <!-- Sort -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                    <select id="sort-select" class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-primary">
+                        <option value="initial_posting_date:desc">Newest First</option>
+                        <option value="initial_posting_date:asc">Oldest First</option>
+                        <option value="generic_name:asc">Drug Name (A-Z)</option>
+                        <option value="generic_name:desc">Drug Name (Z-A)</option>
+                    </select>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="lg:col-span-2 flex items-end space-x-2">
+                    <button id="search-btn" class="flex-1 px-6 py-2 bg-primary text-white rounded-md hover:bg-blue-700 font-medium">
+                        Search
+                    </button>
+                    <button id="clear-btn" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 font-medium">
+                        Clear
+                    </button>
+                </div>
+            </div>
+
+            <!-- Active Filters Display -->
+            <div id="active-filters" class="mt-4 flex flex-wrap gap-2"></div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p class="mt-4 text-gray-600">Loading shortages...</p>
+        </div>
+
+        <!-- Error State -->
+        <div id="error" class="hidden bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+            <div class="text-red-600 text-lg font-semibold mb-2">Error Loading Data</div>
+            <div id="error-message" class="text-red-800 mb-4"></div>
+            <button onclick="loadShortages()" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">
+                Retry
+            </button>
+        </div>
+
+        <!-- Results Table -->
+        <div id="results-container" class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-900">
+                    <span id="results-count">0</span> Shortages Found
+                </h2>
+                <div class="flex items-center space-x-4">
+                    <label class="text-sm text-gray-600">Per Page:</label>
+                    <select id="limit-select" class="px-3 py-1 border border-gray-300 rounded-md text-sm">
+                        <option value="10">10</option>
+                        <option value="20" selected>20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Drug Name</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manufacturer</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form / Route</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Therapeutic Class</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="shortages-tbody" class="bg-white divide-y divide-gray-200">
+                        <!-- Rows will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div id="pagination" class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                <!-- Pagination controls will be inserted here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="text-center text-sm text-gray-600">
+                <p>Data Source: <a href="https://open.fda.gov/apis/drug/drugshortages/" target="_blank" class="text-primary hover:underline">openFDA Drug Shortages API</a></p>
+                <p class="mt-2">Last Updated: <span id="last-updated"></span></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script src="js/api-client.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

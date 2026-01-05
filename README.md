@@ -11,9 +11,43 @@ Healthcare MCP Server is a specialized Node.js server that implements the Model 
 
 This repository includes a packaged DXT (Desktop Extension) file for easy installation in compatible development environments. Download `healthcare-mcp.dxt` for one-click installation.
 
+## 🆕 FDA Drug Shortage Intelligence Dashboard
+
+A comprehensive web-based dashboard for tracking FDA drug shortages with clinical context and analytics.
+
+### Quick Start
+
+```bash
+# From the server directory
+cd server
+npm install
+npm run dashboard
+```
+
+Visit `http://localhost:3001` to access the dashboard.
+
+### Dashboard Features
+
+- **Real-time Shortage Tracking**: Search and filter current FDA drug shortages by name, NDC, status, therapeutic category, dosage form, and manufacturer
+- **Clinical Context**: Automatic enrichment with PubMed articles, Health.gov guidelines, clinical trials, ICD-10 codes, and medRxiv preprints
+- **Analytics & Visualizations**: Aggregate statistics grouped by therapeutic category, route, manufacturer, and dosage form
+- **Geographic Distribution**: Map shortages by manufacturer location (MVP implementation)
+- **Alternative Suggestions**: Identify potential alternative therapies based on therapeutic class
+- **Responsive UI**: Clean, fast interface built with Tailwind CSS
+
+### Architecture
+
+- **Backend**: Node.js + Express REST API (`dashboard-server.js` on port 3001)
+- **Service Layer**: Orchestrates MCP tools and provides enrichment (`services/shortage-service.js`)
+- **Frontend**: Vanilla JavaScript + HTML + Tailwind CSS (no build process required)
+- **Data Source**: openFDA Drug Shortages API with multi-source enrichment
+
+See [ARCHITECTURE-SHORTAGE-DASHBOARD.md](./ARCHITECTURE-SHORTAGE-DASHBOARD.md) for detailed implementation plan and [dashboard/README.md](./dashboard/README.md) for frontend documentation.
+
 ## Features
 
 - **FDA Drug Information**: Search and retrieve comprehensive drug information from the FDA database (improved response parsing)
+- **FDA Drug Shortage Search**: Search current FDA drug shortages with filtering by status, therapeutic category, dosage form, and manufacturer
 - **PubMed Research**: Search medical literature from PubMed's database of scientific articles
 - **Health Topics**: Access evidence-based health information from Health.gov (updated to API v4)
 - **Clinical Trials**: Search for ongoing and completed clinical trials (updated API parameters)

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About - FDA Drug Shortage Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-900">FDA Drug Shortage Intelligence Dashboard</h1>
+                <nav class="flex space-x-4">
+                    <a href="index.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Shortages</a>
+                    <a href="analytics.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Analytics</a>
+                    <a href="trends.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Trends</a>
+                    <a href="map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">Shortage Map</a>
+                    <a href="manufacturers-map.html" class="px-4 py-2 rounded-md text-gray-700 hover:bg-gray-100 font-medium">All Manufacturers</a>
+                    <a href="about.html" class="px-4 py-2 rounded-md bg-blue-600 text-white font-medium">About</a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+            <h2 class="text-3xl font-bold text-gray-900 mb-6">About This Dashboard</h2>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">Purpose</h3>
+                <p class="text-gray-700 leading-relaxed">
+                    The FDA Drug Shortage Intelligence Dashboard provides healthcare providers, pharmacists, and hospital systems
+                    with real-time visibility into current drug shortages in the United States. By aggregating data from the FDA
+                    and enriching it with clinical context from PubMed, Health.gov, Clinical Trials, and other authoritative sources,
+                    this tool helps providers make informed decisions about patient care and supply chain management.
+                </p>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">Data Sources</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><strong>openFDA Drug Shortages API</strong> - Primary shortage data including status, manufacturers, reasons, and timelines</li>
+                    <li><strong>FDA Drug Labels</strong> - Detailed drug information, indications, warnings, and contraindications</li>
+                    <li><strong>FDA DRLS (Drug Registration and Listing System)</strong> - Complete registry of 6,747 pharmaceutical manufacturers</li>
+                    <li><strong>Google Maps Geocoding API</strong> - Converting manufacturer addresses to geographic coordinates</li>
+                    <li><strong>PubMed</strong> - Peer-reviewed medical literature and research articles</li>
+                    <li><strong>Health.gov</strong> - Evidence-based health guidelines and patient information</li>
+                    <li><strong>ClinicalTrials.gov</strong> - Active and completed clinical trials</li>
+                    <li><strong>medRxiv</strong> - Pre-print medical research articles</li>
+                    <li><strong>NCBI Bookshelf</strong> - Biomedical literature and textbooks</li>
+                    <li><strong>NLM Medical Terminology</strong> - ICD-10 codes and medical terminology</li>
+                </ul>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">Features</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-900 mb-2">🔍 Advanced Search & Filtering</h4>
+                        <p class="text-sm text-gray-600">Search by drug name or NDC, filter by status, therapeutic class, dosage form, and manufacturer</p>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-900 mb-2">📊 Analytics & Trends</h4>
+                        <p class="text-sm text-gray-600">Visualize shortage patterns by category, route, manufacturer, and geographic region</p>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-900 mb-2">📚 Clinical Context</h4>
+                        <p class="text-sm text-gray-600">Automatic enrichment with research articles, guidelines, trials, and alternative therapies</p>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h4 class="font-semibold text-gray-900 mb-2">🗺️ Geographic Distribution</h4>
+                        <p class="text-sm text-gray-600">Interactive maps showing active shortages and global manufacturer risk analysis with 1,500+ geocoded facilities</p>
+                    </div>
+                </div>
+            </section>
+
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">Geographic Capabilities</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><strong>Shortage Map:</strong> Active drug shortages mapped by manufacturer location with detailed shortage information</li>
+                    <li><strong>All Manufacturers Map:</strong> Complete FDA registry of 6,747 manufacturers with 1,500+ geocoded locations for supply chain risk analysis</li>
+                    <li><strong>Regional Breakdown:</strong> Shortages organized by City, State for easy regional analysis</li>
+                </ul>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">Data Refresh & Caching</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li><strong>Shortage Data:</strong> Cached for 6 hours (shortages update frequently)</li>
+                    <li><strong>Enrichment Data:</strong> Cached for 24 hours (relatively stable)</li>
+                    <li><strong>Analytics:</strong> Cached for 1 hour (computed from shortages)</li>
+                    <li><strong>Historical Snapshots:</strong> Automated daily snapshots at midnight for trend analysis over time</li>
+                </ul>
+            </section>
+
+            <section class="mb-8">
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">Limitations</h3>
+                <ul class="list-disc list-inside space-y-2 text-gray-700">
+                    <li>1,500 of 6,747 manufacturers currently geocoded (expanding coverage ongoing)</li>
+                    <li>Alternative drug suggestions are based on therapeutic category matching</li>
+                    <li>Data is as current as the openFDA API (typically updated daily)</li>
+                    <li>Some enrichment data may not be available for all drugs</li>
+                </ul>
+            </section>
+
+            <section>
+                <h3 class="text-xl font-semibold text-gray-900 mb-3">Technology Stack</h3>
+                <p class="text-gray-700 mb-3">
+                    <strong>Backend:</strong> Node.js, Express, Model Context Protocol (MCP) tools<br>
+                    <strong>Frontend:</strong> HTML5, JavaScript (ES6+), Tailwind CSS, Leaflet.js for interactive maps<br>
+                    <strong>Database:</strong> SQLite with automated daily snapshots for historical trend analysis<br>
+                    <strong>APIs:</strong> openFDA, PubMed E-utilities, ClinicalTrials.gov, Health.gov v4, Google Maps Geocoding API
+                </p>
+                <p class="text-sm text-gray-600">
+                    Open source project: <a href="https://github.com/Jerempire/healthcare-mcp-public" class="text-blue-600 hover:underline" target="_blank">healthcare-mcp-public</a>
+                </p>
+            </section>
+        </div>
+    </main>
+</body>
+</html>
