@@ -258,6 +258,42 @@ export class DailyMedService {
     }
 
     /**
+     * Clean drug name for better DailyMed searches
+     * Removes dosage forms, salts, and special characters
+     */
+    cleanDrugName(drugName) {
+        if (!drugName) return null;
+
+        let cleaned = drugName;
+
+        // Replace semicolons with spaces
+        cleaned = cleaned.replace(/;/g, ' ');
+
+        // Remove common dosage forms
+        const dosageForms = [
+            'Tablet', 'Capsule', 'Injection', 'Solution', 'Suspension',
+            'Cream', 'Ointment', 'Gel', 'Spray', 'Powder', 'Inhaler',
+            'Injectable', 'Oral', 'Topical', 'Ophthalmic', 'Suppository'
+        ];
+        const dosagePattern = new RegExp(`\\b(${dosageForms.join('|')})s?\\b`, 'gi');
+        cleaned = cleaned.replace(dosagePattern, '');
+
+        // Remove common salt/chemical suffixes
+        const salts = [
+            'Hydrochloride', 'Sodium', 'Sulfate', 'Phosphate', 'Citrate',
+            'Maleate', 'Tartrate', 'Acetate', 'Gluconate', 'Calcium',
+            'Potassium', 'Mesylate', 'Besylate', 'Fumarate', 'Succinate'
+        ];
+        const saltPattern = new RegExp(`\\b(${salts.join('|')})\\b`, 'gi');
+        cleaned = cleaned.replace(saltPattern, '');
+
+        // Clean up extra whitespace
+        cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+        return cleaned;
+    }
+
+    /**
      * Get comprehensive drug information including label and images
      * This is the main method for enriching shortage data
      *
@@ -272,10 +308,13 @@ export class DailyMedService {
             const labelResult = await this.getLabelByNDC(ndc);
             console.error(`[DailyMed] NDC lookup result - status: ${labelResult.status}, labels: ${labelResult.labels?.length || 0}`);
 
-            // If NDC lookup fails and we have a drug name, try searching by name
+            // If NDC lookup fails and we have a drug name, try searching by name with multiple strategies
             if ((labelResult.status === 'error' || !labelResult.labels || labelResult.labels.length === 0) && drugName) {
-                console.error(`[DailyMed] NDC lookup failed for ${ndc}, trying drug name: ${drugName}`);
-                const nameResult = await this.searchByDrugName(drugName);
+                // Try cleaned drug name first
+                const cleanedName = this.cleanDrugName(drugName);
+                console.error(`[DailyMed] NDC lookup failed for ${ndc}, trying cleaned drug name: ${cleanedName}`);
+
+                let nameResult = await this.searchByDrugName(cleanedName);
                 console.error(`[DailyMed] Drug name search result - status: ${nameResult.status}, labels: ${nameResult.labels?.length || 0}`);
 
                 if (nameResult.status === 'success' && nameResult.labels && nameResult.labels.length > 0) {
@@ -302,6 +341,43 @@ export class DailyMedService {
                         } : null,
                         spl_url: `https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=${setid}`
                     };
+                }
+
+                // If cleaned name didn't work, try individual drug components
+                if (cleanedName && cleanedName.includes(' ')) {
+                    const components = cleanedName.split(' ').filter(c => c.length > 3);
+                    console.error(`[DailyMed] Cleaned name search returned 0 results, trying individual components: ${components.join(', ')}`);
+
+                    for (const component of components) {
+                        const componentResult = await this.searchByDrugName(component);
+                        console.error(`[DailyMed] Component "${component}" search result - labels: ${componentResult.labels?.length || 0}`);
+
+                        if (componentResult.status === 'success' && componentResult.labels && componentResult.labels.length > 0) {
+                            const label = componentResult.labels[0];
+                            const setid = label.setid;
+                            const mediaResult = await this.getMediaBySetID(setid);
+
+                            return {
+                                status: 'success',
+                                ndc: ndc,
+                                lookup_method: 'drug_component',
+                                searched_component: component,
+                                label: {
+                                    setid: label.setid,
+                                    title: label.title,
+                                    published_date: label.published_date,
+                                    marketing_category: label.marketing_category,
+                                    application_number: label.application_number,
+                                    labeler: label.labeler
+                                },
+                                images: mediaResult.status === 'success' ? {
+                                    product_images: mediaResult.product_images || [],
+                                    package_images: mediaResult.package_images || []
+                                } : null,
+                                spl_url: `https://dailymed.nlm.nih.gov/dailymed/drugInfo.cfm?setid=${setid}`
+                            };
+                        }
+                    }
                 }
             }
 
