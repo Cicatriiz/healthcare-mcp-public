@@ -1,6 +1,6 @@
 # Healthcare MCP Server
 
-[![smithery badge](https://smithery.ai/badge/@Cicatriiz/healthcare-mcp-public)](https://smithery.ai/server/@Cicatriiz/healthcare-mcp-public)
+[![LightNow](https://lightnow.ai/badge/io.github.cicatriiz/healthcare-mcp-public)](https://lightnow.ai/servers/io.github.cicatriiz/healthcare-mcp-public)
 A Model Context Protocol (MCP) server providing AI assistants with access to healthcare data and medical information tools.
 
 ## Overview
